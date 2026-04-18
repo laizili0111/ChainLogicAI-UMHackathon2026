@@ -1,0 +1,13 @@
+# Ignore the virtual environment
+venv/
+env/
+
+# Ignore Python cache
+__pycache__/
+
+# Ignore the database (teammates will generate their own on startup)
+*.db
+chainlogic_erp.db
+
+# Ignore environment variables (Keep your API keys safe!)
+.env

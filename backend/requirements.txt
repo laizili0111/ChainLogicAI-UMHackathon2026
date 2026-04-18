@@ -1,0 +1,9 @@
+# --- Web Framework & Server ---
+fastapi
+uvicorn[standard]
+
+# --- Environment Variables (For your API Key later) ---
+python-dotenv
+
+# --- AI Integration ---
+# z_ai_sdk  <-- (Uncomment and update this once the hackathon organizers provide the exact pip install command!)
