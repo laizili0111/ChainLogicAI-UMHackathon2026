@@ -21,7 +21,7 @@ chainlogic-ai/
 ├── backend/                # Python FastAPI Server & SQLite Database
 │   ├── main.py             # Core API logic, routing, and DB execution
 │   ├── requirements.txt    # Python dependencies
-│   └── .env                # Z.AI API Key goes here
+│   └── .gitignore          # Prevents venv and local DBs from uploading
 │
 ├── frontend/               # Next.js React Dashboard
 │   ├── src/app/page.tsx    # Main UI and Client-side logic
@@ -30,6 +30,20 @@ chainlogic-ai/
 │
 └── README.md               
 ```
+
+## 🔑 Environment Variables (API Keys)
+
+To enable the live AI reasoning engine, you must provide a valid Z.AI API key locally. Never commit your real API key to GitHub.
+
+Navigate to the backend/ folder on your local machine.
+
+Create a new file named exactly .env
+
+Add your API key inside the file like this:
+
+`Z_AI_API_KEY="insert_your_key_here"`
+
+(Note: The .env file is safely ignored by Git thanks to the .gitignore file).
 
 ## 🚀 Quick Start Guide
 
@@ -41,46 +55,69 @@ Python 3.9+
 
 Node.js 18+
 
+
 ### Terminal 1: Start the AI Backend & Database
 
-Open a terminal and navigate to the backend directory:
+1. Open a terminal and navigate to the backend directory:
 
 `cd backend`
 
-Create a virtual environment:
+
+2. Create a virtual environment:
 
 Windows: `python -m venv venv`
 
 Mac/Linux: `python3 -m venv venv`
 
-Activate the virtual environment:
+
+3. Activate the virtual environment:
 
 Windows: `.\venv\Scripts\activate`
 
 Mac/Linux: `source venv/bin/activate`
 
-Install the required dependencies:
+
+4. Install the required dependencies:
 
 `pip install -r requirements.txt`
 
-Start the FastAPI server:
+
+5. Start the FastAPI server:
 
 `python -m uvicorn main:app --reload`
 
 (Note: On the first run, the server will automatically generate and seed the chainlogic_erp.db SQLite database).
 
+
 ### Terminal 2: Start the React Dashboard
 
-Open a new, second terminal window and navigate to the frontend directory:
+1. Open a new, second terminal window and navigate to the frontend directory:
 
 `cd frontend`
 
-Install the Node modules (only needed the first time):
+
+2. Install the Node modules (only needed the first time):
 
 `npm install`
 
-Start the Next.js development server:
+
+3. Start the Next.js development server:
 
 `npm run dev`
 
-Open your browser and navigate to http://localhost:3000 to view the dashboard
+
+4. Open your browser and navigate to http://localhost:3000 to view the dashboard
+
+## 🧪 How to Demo the Prototype
+
+1. Launch both the backend and frontend servers.
+
+2. Open the dashboard at http://localhost:3000.
+
+3. In the Corporate Inbox, paste a disruption scenario (e.g., "URGENT: Taiwan foundry delay. Our shipment of MCU-TC397-EVO microcontrollers will be delayed by 3 weeks.")
+
+4. Click Run Z.AI Decision Engine.
+
+5. Observe the Data Pipeline Viewer to see the exact SQLite rows the Agentic Extractor pulled to prevent hallucinations.
+
+6. Review the Trade-Off cards and click Execute Decision on the recommended path to write the new state back to the ERP database.
