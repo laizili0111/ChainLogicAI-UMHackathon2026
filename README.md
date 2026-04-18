@@ -31,10 +31,12 @@ chainlogic-ai/
 └── README.md               
 ```
 
-🚀 Quick Start Guide
+## 🚀 Quick Start Guide
+
 To run this prototype locally, you will need to run the Backend and the Frontend simultaneously in two separate terminal windows.
 
-Prerequisites
+### Prerequisites
+
 Python 3.9+
 
 Node.js 18+
@@ -42,32 +44,43 @@ Node.js 18+
 ### Terminal 1: Start the AI Backend & Database
 
 Open a terminal and navigate to the backend directory:
-cd backend
+
+`cd backend`
 
 Create a virtual environment:
-Windows: python -m venv venv
-Mac/Linux: python3 -m venv venv
+
+Windows: `python -m venv venv`
+
+Mac/Linux: `python3 -m venv venv`
 
 Activate the virtual environment:
-Windows: .\venv\Scripts\activate
-Mac/Linux: source venv/bin/activate
+
+Windows: `.\venv\Scripts\activate`
+
+Mac/Linux: `source venv/bin/activate`
 
 Install the required dependencies:
-pip install -r requirements.txt
+
+`pip install -r requirements.txt`
 
 Start the FastAPI server:
-python -m uvicorn main:app --reload
+
+`python -m uvicorn main:app --reload`
+
 (Note: On the first run, the server will automatically generate and seed the chainlogic_erp.db SQLite database).
 
 ### Terminal 2: Start the React Dashboard
 
 Open a new, second terminal window and navigate to the frontend directory:
-cd frontend
+
+`cd frontend`
 
 Install the Node modules (only needed the first time):
-npm install
+
+`npm install`
 
 Start the Next.js development server:
-npm run dev
+
+`npm run dev`
 
 Open your browser and navigate to http://localhost:3000 to view the dashboard
