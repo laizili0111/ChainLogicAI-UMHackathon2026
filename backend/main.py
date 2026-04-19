@@ -40,29 +40,25 @@ def setup_database():
     )
     ''')
 
-    # Create Production Schedule Table
+    # Create Delivery Agreements Table
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS production_schedule (
+    CREATE TABLE IF NOT EXISTS delivery_schedule (
         job_id INTEGER PRIMARY KEY,
-        project_name TEXT UNIQUE, 
+        buyer_name TEXT UNIQUE, 
         required_sku TEXT,
         required_quantity INTEGER,
         deadline_date TEXT,
-        daily_downtime_penalty REAL,
+        spoilage_penalty_rate REAL,
         FOREIGN KEY (required_sku) REFERENCES inventory (sku)
     )
     ''')
 
-    # --- SEED DATA: INVENTORY ---
+    # --- SEED DATA: INVENTORY (COLD CHAIN) ---
     inventory_data = [
-        # 1. Our Original Hero Scenario
-        ('AE-V8-SENS', 'High-Fidelity Acoustic Emission Sensor', 'Powertrain Validation', 12, 20, 450.00, 14, 'Munich Precision GmbH'),
-        # 2. High Stakes, Low Cost part
-        ('MCU-TC397-EVO', 'TriCore Microcontroller TC397', 'Electronics', 150, 500, 45.00, 90, 'Infineon Direct'),
-        # 3. Overstocked Commodity (No Crisis)
-        ('BRK-PAD-99', 'Ceramic Brake Pad Set', 'Chassis', 850, 200, 18.50, 10, 'Brembo OEM'),
-        # 4. High Volume EV Component
-        ('BATT-CELL-4680', 'Lithium-Ion Cell 4680', 'Powertrain', 4000, 5000, 12.00, 45, 'Panasonic Energy')
+        ('POULTRY-WHOLE-A', 'Grade-A Whole Chicken', 'Meat/Poultry', 2000, 500, 12.50, 2, 'Klang Farms Berhad'),
+        ('BEEF-WAGYU-A5', 'A5 Wagyu Strip', 'Meat/Beef', 50, 10, 150.00, 7, 'Global Premium Meats'),
+        ('MILK-FRESH-1L', 'Fresh Milk 1L', 'Dairy', 1200, 400, 4.50, 1, 'Subang Local Dairy'),
+        ('SALMON-FILLET', 'Norwegian Salmon Fillet', 'Seafood', 300, 50, 45.00, 3, 'Nordic Sea Catch')
     ]
     
     cursor.executemany('''
@@ -70,16 +66,16 @@ def setup_database():
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', inventory_data)
 
-    # --- SEED DATA: PRODUCTION SCHEDULE ---
+    # --- SEED DATA: DELIVERY SCHEDULE & PENALTIES ---
     schedule_data = [
-        ('V8 Engine Acoustic Validation Rig B', 'AE-V8-SENS', 40, '2026-04-25', 12500.00),
-        ('ADAS ECU Assembly Line', 'MCU-TC397-EVO', 1000, '2026-05-10', 45000.00),
-        ('Sedan Fleet Maintenance', 'BRK-PAD-99', 300, '2026-04-20', 2500.00),
-        ('EV Battery Pack Gen 3', 'BATT-CELL-4680', 8000, '2026-06-01', 85000.00)
+        ('Restaurant FSKTM Campus Cafe', 'POULTRY-WHOLE-A', 200, '2026-04-19 14:00', 2500.00), # Huge contract loss if they fail to supply the university
+        ('Elite Steakhouse KL', 'BEEF-WAGYU-A5', 20, '2026-04-25 18:00', 8500.00),
+        ('GrocerMart PJ', 'MILK-FRESH-1L', 500, '2026-04-20 06:00', 500.00),
+        ('Sushi King Chain', 'SALMON-FILLET', 150, '2026-04-21 11:00', 6750.00)
     ]
     
     cursor.executemany('''
-        INSERT OR IGNORE INTO production_schedule (project_name, required_sku, required_quantity, deadline_date, daily_downtime_penalty)
+        INSERT OR IGNORE INTO delivery_schedule (buyer_name, required_sku, required_quantity, deadline_date, spoilage_penalty_rate)
         VALUES (?, ?, ?, ?, ?)
     ''', schedule_data)
 
@@ -90,74 +86,62 @@ def setup_database():
 @app.on_event("startup")
 def startup_event():
     setup_database()
-    print("Database Initialized Successfully.")
+    print("Database Initialized Successfully. (Cold Chain Logistics)")
 
 # 3. The API Endpoint for the React Dashboard
 # import z_ai_sdk  <-- Import the actual hackathon SDK here
 
 # --- THE Z.AI SYSTEM PROMPT ---
-# This is the "brain" of application. It dictates exactly how the AI behaves.
+# This dictates exactly how the AI behaves. We tell it to care about spoilage now!
 CHAINLOGIC_SYSTEM_PROMPT = """
-You are ChainLogic AI, an expert Supply Chain Decision Engine for Automotive SMEs.
-Your primary directive is to analyze supply chain disruptions, calculate financial trade-offs, and recommend actions to prevent production downtime and mitigate the 'Bullwhip Effect' (over-ordering out of panic).
+You are ChainLogic AI, an expert Predictive Logistics Engine for Cold-Chain SMEs.
+Your primary directive is to analyze logistics disruptions (like broken cooling or traffic), calculate financial trade-offs regarding inventory spoilage, and recommend the best outcome to salvage value.
 
 You will be provided with:
-1. UNSTRUCTURED TRIGGER: An email or alert regarding a disruption.
-2. STRUCTURED ERP CONTEXT: Real-time inventory and production schedule data from the database.
+1. UNSTRUCTURED TRIGGER: An email/telegram from a driver regarding the disruption.
+2. STRUCTURED ERP CONTEXT: Real-time inventory value and buyer penalty data.
 
-CRITICAL INSTRUCTION: You must respond ONLY with raw, valid JSON. Do not include markdown formatting like ```json or any conversational text before or after the JSON. 
+CRITICAL INSTRUCTION: You must respond ONLY with raw, valid JSON. Do not include markdown formatting like ```json. 
 
 Your JSON output must perfectly match this exact schema:
 {
   "crisis_analysis": {
     "status": "CRITICAL",
     "affected_component": { "sku": "string", "name": "string" },
-    "baseline_impact": "string (Calculate the days until stockout and total financial penalty)"
+    "baseline_impact": "string (Calculate the risk of total inventory loss and financial penalty)"
   },
   "trade_off_options": [
     {
       "option_id": "string (A, B, C)",
       "action": "string",
       "justification": "string (A brief 1-sentence explanation of why this option is viable and its trade-offs)",
-      "financial_impact": { "net_financial_impact": number (Use negative numbers for costs) }
+      "financial_impact": { "net_financial_impact": number (Use negative numbers for costs/losses) }
     }
   ],
   "glm_recommendation": {
     "primary_choice": "string (A, B, or C)",
-    "explainability": "string (Explain WHY this is the best mathematical and strategic choice. Use specific dollar amounts and mention avoiding the bullwhip effect if applicable.)"
+    "explainability": "string (Explain WHY this is the best mathematical choice based on reducing spoilage and minimizing margin loss.)"
   }
 }
 """
 
-def fetch_erp_context(sku: str):
-    """Helper function 1: Formats data as a string for the AI Prompt."""
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventory WHERE sku = ?", (sku,))
-    inv_data = cursor.fetchone()
-    cursor.execute("SELECT * FROM production_schedule WHERE required_sku = ?", (sku,))
-    prod_data = cursor.fetchone()
-    conn.close()
-    
-    if not inv_data: return "No ERP data found."
-    return f"SKU: {inv_data[1]} | Stock: {inv_data[4]} | Penalty: ${prod_data[5]}/day"
-
 def fetch_erp_data_dict(sku: str):
-    """Helper function 2: Formats data as a dictionary for the React UI."""
+    """Helper function: Formats data as a dictionary for the React UI."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM inventory WHERE sku = ?", (sku,))
     inv_data = cursor.fetchone()
-    cursor.execute("SELECT * FROM production_schedule WHERE required_sku = ?", (sku,))
+    cursor.execute("SELECT * FROM delivery_schedule WHERE required_sku = ?", (sku,))
     prod_data = cursor.fetchone()
     conn.close()
     
     if inv_data and prod_data:
         return {
             "sku": sku,
-            "current_inventory": inv_data[4],  # This grabs the LIVE stock number!
+            "current_inventory": inv_data[4],
             "unit_cost": inv_data[6],
-            "daily_penalty": prod_data[5],
+            "daily_penalty": prod_data[5], # We use 'daily_penalty' key so the frontend UI doesn't break
+            "buyer": prod_data[1],
             "database_status": "200 OK - Read Successful"
         }
     return None
@@ -165,90 +149,79 @@ def fetch_erp_data_dict(sku: str):
 def extract_sku_from_trigger(email_text: str) -> str:
     """
     Step 1 of the Agentic Workflow. 
-    In production, this is a fast Z.AI prompt. For the hackathon MVP, we simulate the AI's extraction using a Regex pattern matching typical automotive SKUs.
+    A hackathon mock that mimics standard SKU formats in our DB.
     """
-    # ---------------------------------------------------------
-    # TODO (When API arrives): 
-    # prompt = f"Extract the specific part number/SKU from this text. Output ONLY the SKU string. Text: {email_text}"
-    # response = z_ai_client.generate(prompt)
-    # return response.text.strip()
-    # ---------------------------------------------------------
-    
-    # -- MOCK AI EXTRACTION --
-    # This regex looks for patterns like "AE-V8-SENS" (letters/numbers separated by hyphens)
-    match = re.search(r'[A-Z0-9]{2,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}', email_text.upper())
+    # Looks for words like POULTRY-WHOLE-A, BEEF-WAGYU-A5
+    match = re.search(r'[A-Z]+-[A-Z]+-[A-Z0-9]+', email_text.upper())
     
     if match:
         return match.group(0)
-    
-    return None # Returns None if no SKU is found in the email
+    return None
 
 @app.post("/api/analyze-crisis")
 async def analyze_crisis(trigger_data: dict):
     incoming_email = trigger_data.get("trigger_text", "")
     
-    # 1. The Extractor AI reads the email and finds the SKU dynamically!
     target_sku = extract_sku_from_trigger(incoming_email)
     
-    # Safety Check: Email didn't contain a valid SKU
     if not target_sku:
-        return {
-            "error": "Z.AI could not identify a valid component SKU in the provided text. Please ensure the part number is included."
-        }
+        return {"error": "Z.AI could not identify a valid product SKU."}
     
-    # 2. Fetch live data for BOTH the AI and the UI using the dynamic SKU
-    erp_context_string = fetch_erp_context(target_sku)
     live_ui_data = fetch_erp_data_dict(target_sku)
     
-    # Safety Check: SKU not in SQLite database
     if not live_ui_data:
-         return {
-            "error": f"SKU '{target_sku}' extracted from text, but it does not exist in the Enterprise Database master records."
-            }
+         return {"error": f"SKU '{target_sku}' does not exist in the Enterprise Database."}
     
-    # 2. This is the hardcoded AI response (until getting the API key)
+    # 2. This is the hardcoded AI response for the Cold-Chain scenario
     ai_json_string = """
     {
         "crisis_analysis": {
-            "status": "CRITICAL",
-            "affected_component": { "sku": "AE-V8-SENS", "name": "High-Fidelity Acoustic Emission Sensor" },
+            "status": "CRITICAL (TIME-SENSITIVE)",
+            "affected_component": { "sku": "POULTRY-WHOLE-A", "name": "Grade-A Whole Chicken" },
             "baseline_impact": "Will be dynamically updated below."
         },
         "trade_off_options": [
             {
                 "option_id": "A",
-                "action": "Air Freight via Secondary EU Supplier",
-                "justification": "Fastest recovery time, but incurs a severe premium shipping cost that impacts profit margins.",
-                "financial_impact": { "net_financial_impact": -8500 }
+                "action": "Wait Out Traffic (Federal Hwy)",
+                "justification": "Doing nothing. Due to broken AC, 85% probability of total inventory spoilage after 2 hours.",
+                "financial_impact": { "net_financial_impact": -5000 }
+            },
+            {
+                "option_id": "B",
+                "action": "Dispatch Emergency Chiller Truck",
+                "justification": "Saves the cargo and fulfills FSKTM Cafe order, but the emergency dispatch consumes all profit margins for this route.",
+                "financial_impact": { "net_financial_impact": -1200 }
             },
             {
                 "option_id": "C",
-                "action": "Reschedule Rig B to V6 Engine Variant Testing",
-                "justification": "Swapping the testing schedule entirely avoids the downtime penalty and requires zero additional capital.",
-                "financial_impact": { "net_financial_impact": 0 }
+                "action": "Reroute & Flash-Sale to Subang Grocer",
+                "justification": "Bypasses traffic. Sells inventory at 30% discount to nearby grocer before it spoils. We lose the FSKTM contract daily penalty, but salvage 70% of inventory value.",
+                "financial_impact": { "net_financial_impact": -750 }
             }
         ],
         "glm_recommendation": {
             "primary_choice": "C",
-            "explainability": "Option C mitigates the daily penalty and avoids an expedite fee."
+            "explainability": "Option C mathematically minimizes total unrecoverable loss. Salvaging 70% of inventory value immediately outweighs the risk of 100% loss and the heavy dispatch fee of Option B."
         }
     }
     """
     
     try:
-        # 3. Convert string to Python dictionary
         decision_data = json.loads(ai_json_string)
         
-        # 4. 🔥 THE MAGIC STEP: Inject the live SQLite data into the dictionary
+        # Inject live SQLite data
         decision_data["contextual_data_retrieved"] = live_ui_data
         
-        # Make the AI's baseline impact text dynamic based on real inventory
-        current_stock = live_ui_data["current_inventory"]
-        daily_penalty = live_ui_data["daily_penalty"]
-        decision_data["crisis_analysis"]["baseline_impact"] = f"Current stock of {current_stock} units will not meet the requirement. Penalty risk is ${daily_penalty:,.2f}/day."
+        inv = live_ui_data["current_inventory"]
+        cost = live_ui_data["unit_cost"]
+        penalty = live_ui_data["daily_penalty"]
+        buyer = live_ui_data["buyer"]
+        
+        # Dynamic Risk Sentence!
+        decision_data["crisis_analysis"]["baseline_impact"] = f"Broken Cooling Unit detected. {inv} units at high risk. Spoilage cost is ${inv*cost:,.2f}. Failing {buyer} contract incurs additional ${penalty:,.2f} penalty."
         decision_data["crisis_analysis"]["affected_component"]["sku"] = target_sku
         
-        # 5. Send to React
         return decision_data
         
     except Exception as e:
@@ -257,34 +230,32 @@ async def analyze_crisis(trigger_data: dict):
 @app.post("/api/execute-decision")
 async def execute_decision(payload: dict):
     option_id = payload.get("option_id")
-    target_sku = payload.get("sku", "AE-V8-SENS")
-    # Grab the dynamic text generated by the AI
-    action_text = payload.get("action", "AI Automated Adjustment")
+    target_sku = payload.get("sku", "POULTRY-WHOLE-A")
+    action_text = payload.get("action", "AI Automated Reroute")
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
     try:
         if option_id == "C":
-            # Inject the AI's exact text into the database!
+             # Update buyer to Subang Grocer
             cursor.execute("""
-                UPDATE production_schedule 
-                SET project_name = ?, 
-                    daily_downtime_penalty = 0 
+                UPDATE delivery_schedule 
+                SET buyer_name = ?, 
+                    spoilage_penalty_rate = 0 
                 WHERE required_sku = ?
-            """, (f"RESCHEDULED: {action_text}", target_sku))
+            """, (f"FLASH-SALE: Subang Grocer (Rerouted)", target_sku))
             
-        elif option_id == "A":
-            # We can still hardcode the math for safety, but use dynamic logging
+        elif option_id == "B":
+             # Decrease profit margin by increasing cost theoretically
             cursor.execute("""
                 UPDATE inventory 
-                SET unit_cost = unit_cost + 212.50
+                SET unit_cost = unit_cost + 5.00
                 WHERE sku = ?
             """, (target_sku,))
-            
-        conn.commit()
         
-        cursor.execute("SELECT project_name, daily_downtime_penalty FROM production_schedule WHERE required_sku = ?", (target_sku,))
+        conn.commit()
+        cursor.execute("SELECT buyer_name, spoilage_penalty_rate FROM delivery_schedule WHERE required_sku = ?", (target_sku,))
         updated_row = cursor.fetchone()
         
         return {
