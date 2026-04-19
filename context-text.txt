@@ -1,0 +1,43 @@
+Test 1: The Freelance Developer
+Step 1. The Onboarding (Universal Truth):
+
+"I am an independent software developer. I manage multiple active client contracts, strictly track my hourly billing rate at RM 150/hr, and oversee software maintenance SLAs." (Notice how Z.AI builds 'client', 'contract', and 'rate' entities in the background).
+
+Step 2. The Daily Log (Tiptap Composer):
+
+"Client B's production server crashed this morning. I had to drop everything to debug their PostgreSQL database for 3 hours. I was supposed to deploy the new Landing Page for Client A today, but now I'm entirely off schedule." (Hit Generate: Z.AI will calculate the hourly billing cost of your 3 hours, and evaluate the risk of missing Client A's deadline).
+
+Test 2: The Nasi Lemak Stall (The Roots)
+Step 1. The Onboarding (Universal Truth):
+
+"I run a local Nasi Lemak food stall in Kuala Lumpur. I manage highly perishable inventory like fresh sambal, marinated chicken, and bulk rice. We supply a contract of 150 packets to local university cafes every single morning."
+
+Step 2. The Daily Log (Tiptap Composer):
+
+"My main market supplier called and said the fresh chicken delivery is delayed by 4 hours. Normally, I start frying at 5 AM. I just checked the freezer and I only have enough backup chicken for about 40 packets." (Drag the 📝 Human Override sticky note into the dropzone, type "The university cafe says they will accept fish as a substitute today if we drop the price by RM 1.00", and hit Generate. Watch the AI calculate the emergency pivot!)
+
+Test 3: The Last-Mile Delivery Fleet
+Step 1. The Onboarding (Universal Truth):
+
+"I operate a last-mile courier fleet in Selangor. We track delivery vans, driver shifts, daily fuel costs, and must maintain a strict 24-hour delivery window for premium eCommerce packages."
+
+Step 2. The Daily Log (Tiptap Composer):
+
+"Van #3 suffered a blown tire on the highway, carrying 42 premium eCommerce packages. The nearest tow truck requires 2 hours to arrive, and the driver's shift legally ends in 45 minutes." (Drag the 🚦 Waze Live Traffic plugin into the dropzone to make the situation even worse, then hit Generate. The AI will output triage options balancing driver overtime costs vs SLA SLA breach penalties).
+
+----------------------------------------------------------------------
+"I am a freelance UI designer. I track my active corporate projects, an hourly billing rate of $100/hr, and maintain strict deployment SLAs."
+
+Step 2. The Narrative Execution (Jupyter Timeline):
+
+Cell 1 (In[1]):
+
+"Just signed a new contract with Acme Corp for a web redesign. Setting up the GitHub repository today." (Hit Commit Cell.) Verification: Z.AI should cleanly acknowledge Acme Corp. No maps, no mentions of Client B.
+
+Cell 2 (In[2]):
+
+"My primary design software crashed and corrupted my main project file. I will need 4 extra hours to rebuild the assets from scratch." (Hit Commit Cell.) Verification: Because of continuity, Z.AI will instantly calculate a $400 margin hit (4 hours x $100/hr) and flag an SLA warning specifically related to Acme Corp, even though you didn't mention Acme Corp again in Cell 2!
+
+Cell 3 (In[3]):
+
+"I've contacted Acme Corp. They agreed to extend the deadline by 2 days if I drop my overall invoice by 10%." (Drag in the 📝 Human Override sticky note into the dropzone.) (Type in the sticky note: "Accept the deal, but prioritize finalizing the UI components today before the backend layout.") (Hit Commit Cell.) Verification: Z.AI executes the pivot, utilizing your human instruction to override its standard risk assessment.

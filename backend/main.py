@@ -1,269 +1,224 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import BackgroundTasks
-import sqlite3
 import os
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import sqlite3
 import json
-import re
+from openai import OpenAI
+from dotenv import load_dotenv
 
-# 1. Initialize FastAPI App
-app = FastAPI(title="ChainLogic AI Backend")
+load_dotenv()
 
-# CRITICAL FOR REACT: Enable CORS
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+client = OpenAI(
+  base_url="https://api.groq.com/openai/v1",
+  api_key=GROQ_API_KEY,
+  timeout=30.0,
+  max_retries=1,
+)
+
+app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Open for hackathon dev
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-DB_FILE = 'chainlogic_erp.db'
-
-# 2. Database Setup Function
 def setup_database():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
-    # Create Inventory Table
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS inventory (
-        part_id INTEGER PRIMARY KEY,
-        sku TEXT UNIQUE,
-        part_name TEXT,
-        category TEXT,
-        current_stock INTEGER,
-        safety_stock INTEGER,
-        unit_cost REAL,
-        lead_time_days INTEGER,
-        primary_supplier TEXT
-    )
+    conn = sqlite3.connect('chainlogic_erp.db')
+    c = conn.cursor()
+    c.execute("DROP TABLE IF EXISTS inventory")
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS system_entities (
+            id TEXT PRIMARY KEY,
+            domain TEXT,
+            entity_type TEXT,
+            entity_name TEXT,
+            attributes JSON
+        )
     ''')
-
-    # Create Delivery Agreements Table
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS delivery_schedule (
-        job_id INTEGER PRIMARY KEY,
-        buyer_name TEXT UNIQUE, 
-        required_sku TEXT,
-        required_quantity INTEGER,
-        deadline_date TEXT,
-        spoilage_penalty_rate REAL,
-        FOREIGN KEY (required_sku) REFERENCES inventory (sku)
-    )
-    ''')
-
-    # --- SEED DATA: INVENTORY (COLD CHAIN) ---
-    inventory_data = [
-        ('POULTRY-WHOLE-A', 'Grade-A Whole Chicken', 'Meat/Poultry', 2000, 500, 12.50, 2, 'Klang Farms Berhad'),
-        ('BEEF-WAGYU-A5', 'A5 Wagyu Strip', 'Meat/Beef', 50, 10, 150.00, 7, 'Global Premium Meats'),
-        ('MILK-FRESH-1L', 'Fresh Milk 1L', 'Dairy', 1200, 400, 4.50, 1, 'Subang Local Dairy'),
-        ('SALMON-FILLET', 'Norwegian Salmon Fillet', 'Seafood', 300, 50, 45.00, 3, 'Nordic Sea Catch')
-    ]
-    
-    cursor.executemany('''
-        INSERT OR IGNORE INTO inventory (sku, part_name, category, current_stock, safety_stock, unit_cost, lead_time_days, primary_supplier)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', inventory_data)
-
-    # --- SEED DATA: DELIVERY SCHEDULE & PENALTIES ---
-    schedule_data = [
-        ('Restaurant FSKTM Campus Cafe', 'POULTRY-WHOLE-A', 200, '2026-04-19 14:00', 2500.00), # Huge contract loss if they fail to supply the university
-        ('Elite Steakhouse KL', 'BEEF-WAGYU-A5', 20, '2026-04-25 18:00', 8500.00),
-        ('GrocerMart PJ', 'MILK-FRESH-1L', 500, '2026-04-20 06:00', 500.00),
-        ('Sushi King Chain', 'SALMON-FILLET', 150, '2026-04-21 11:00', 6750.00)
-    ]
-    
-    cursor.executemany('''
-        INSERT OR IGNORE INTO delivery_schedule (buyer_name, required_sku, required_quantity, deadline_date, spoilage_penalty_rate)
-        VALUES (?, ?, ?, ?, ?)
-    ''', schedule_data)
-
     conn.commit()
     conn.close()
 
-# Run setup when the server starts
-@app.on_event("startup")
-def startup_event():
-    setup_database()
-    print("Database Initialized Successfully. (Cold Chain Logistics)")
+setup_database()
 
-# 3. The API Endpoint for the React Dashboard
-# import z_ai_sdk  <-- Import the actual hackathon SDK here
+class LedgerRequest(BaseModel):
+    document_text: str
+    active_plugins: list[str] = []
+    custom_context_notes: str = ""
 
-# --- THE Z.AI SYSTEM PROMPT ---
-# This dictates exactly how the AI behaves. We tell it to care about spoilage now!
-CHAINLOGIC_SYSTEM_PROMPT = """
-You are ChainLogic AI, an expert Predictive Logistics Engine for Cold-Chain SMEs.
-Your primary directive is to analyze logistics disruptions (like broken cooling or traffic), calculate financial trade-offs regarding inventory spoilage, and recommend the best outcome to salvage value.
+class ExecuteRequest(BaseModel):
+    option_id: str
+    sku: str
+    action: str
 
-You will be provided with:
-1. UNSTRUCTURED TRIGGER: An email/telegram from a driver regarding the disruption.
-2. STRUCTURED ERP CONTEXT: Real-time inventory value and buyer penalty data.
+class InitializeErpRequest(BaseModel):
+    universal_truth: str
 
-CRITICAL INSTRUCTION: You must respond ONLY with raw, valid JSON. Do not include markdown formatting like ```json. 
-
-Your JSON output must perfectly match this exact schema:
-{
-  "crisis_analysis": {
-    "status": "CRITICAL",
-    "affected_component": { "sku": "string", "name": "string" },
-    "baseline_impact": "string (Calculate the risk of total inventory loss and financial penalty)"
-  },
-  "trade_off_options": [
-    {
-      "option_id": "string (A, B, C)",
-      "action": "string",
-      "justification": "string (A brief 1-sentence explanation of why this option is viable and its trade-offs)",
-      "financial_impact": { "net_financial_impact": number (Use negative numbers for costs/losses) }
-    }
-  ],
-  "glm_recommendation": {
-    "primary_choice": "string (A, B, or C)",
-    "explainability": "string (Explain WHY this is the best mathematical choice based on reducing spoilage and minimizing margin loss.)"
-  }
-}
-"""
-
-def fetch_erp_data_dict(sku: str):
-    """Helper function: Formats data as a dictionary for the React UI."""
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventory WHERE sku = ?", (sku,))
-    inv_data = cursor.fetchone()
-    cursor.execute("SELECT * FROM delivery_schedule WHERE required_sku = ?", (sku,))
-    prod_data = cursor.fetchone()
-    conn.close()
+@app.post("/api/initialize-erp")
+async def initialize_erp(request: InitializeErpRequest):
+    prompt = f"""
+    The user is setting up a Zero-Setup ERP system for their business.
+    Their core business reality context is: "{request.universal_truth}"
     
-    if inv_data and prod_data:
-        return {
-            "sku": sku,
-            "current_inventory": inv_data[4],
-            "unit_cost": inv_data[6],
-            "daily_penalty": prod_data[5], # We use 'daily_penalty' key so the frontend UI doesn't break
-            "buyer": prod_data[1],
-            "database_status": "200 OK - Read Successful"
-        }
-    return None
-
-def extract_sku_from_trigger(email_text: str) -> str:
-    """
-    Step 1 of the Agentic Workflow. 
-    A hackathon mock that mimics standard SKU formats in our DB.
-    """
-    # Looks for words like POULTRY-WHOLE-A, BEEF-WAGYU-A5
-    match = re.search(r'[A-Z]+-[A-Z]+-[A-Z0-9]+', email_text.upper())
+    You must define the initial core entities for their business using an Entity-Attribute-Value pattern.
+    Return ONLY a valid JSON array of objects. Do NOT wrap in markdown array ticks like ```json.
     
-    if match:
-        return match.group(0)
-    return None
-
-@app.post("/api/analyze-crisis")
-async def analyze_crisis(trigger_data: dict):
-    incoming_email = trigger_data.get("trigger_text", "")
+    Each object MUST have EXACTLY these fields:
+    - "id": a unique string ID
+    - "domain": a string (e.g., "logistics", "finance", "freelance", "hospitality")
+    - "entity_type": a string (e.g., "inventory", "client", "project", "asset")
+    - "entity_name": a descriptive name
+    - "attributes": a JSON object with key-value descriptors (e.g., quantity, rate, status, spoilage_risk)
     
-    target_sku = extract_sku_from_trigger(incoming_email)
-    
-    if not target_sku:
-        return {"error": "Z.AI could not identify a valid product SKU."}
-    
-    live_ui_data = fetch_erp_data_dict(target_sku)
-    
-    if not live_ui_data:
-         return {"error": f"SKU '{target_sku}' does not exist in the Enterprise Database."}
-    
-    # 2. This is the hardcoded AI response for the Cold-Chain scenario
-    ai_json_string = """
-    {
-        "crisis_analysis": {
-            "status": "CRITICAL (TIME-SENSITIVE)",
-            "affected_component": { "sku": "POULTRY-WHOLE-A", "name": "Grade-A Whole Chicken" },
-            "baseline_impact": "Will be dynamically updated below."
-        },
-        "trade_off_options": [
-            {
-                "option_id": "A",
-                "action": "Wait Out Traffic (Federal Hwy)",
-                "justification": "Doing nothing. Due to broken AC, 85% probability of total inventory spoilage after 2 hours.",
-                "financial_impact": { "net_financial_impact": -5000 }
-            },
-            {
-                "option_id": "B",
-                "action": "Dispatch Emergency Chiller Truck",
-                "justification": "Saves the cargo and fulfills FSKTM Cafe order, but the emergency dispatch consumes all profit margins for this route.",
-                "financial_impact": { "net_financial_impact": -1200 }
-            },
-            {
-                "option_id": "C",
-                "action": "Reroute & Flash-Sale to Subang Grocer",
-                "justification": "Bypasses traffic. Sells inventory at 30% discount to nearby grocer before it spoils. We lose the FSKTM contract daily penalty, but salvage 70% of inventory value.",
-                "financial_impact": { "net_financial_impact": -750 }
-            }
-        ],
-        "glm_recommendation": {
-            "primary_choice": "C",
-            "explainability": "Option C mathematically minimizes total unrecoverable loss. Salvaging 70% of inventory value immediately outweighs the risk of 100% loss and the heavy dispatch fee of Option B."
-        }
-    }
+    Create exactly 3-5 high-quality, relevant core entities based on their description.
     """
     
     try:
-        decision_data = json.loads(ai_json_string)
+        response = client.chat.completions.create(
+          model="llama-3.3-70b-versatile",
+          messages=[
+            {"role": "system", "content": "You are an expert Database Administrator."},
+            {"role": "user", "content": prompt}
+          ]
+        )
+        raw = response.choices[0].message.content
+        start = raw.find('[')
+        end = raw.rfind(']') + 1
+        if start != -1 and end != 0:
+            raw = raw[start:end]
+        else:
+            raw = raw.replace("```json", "").replace("```", "").strip()
+            
+        entities = json.loads(raw)
         
-        # Inject live SQLite data
-        decision_data["contextual_data_retrieved"] = live_ui_data
+        conn = sqlite3.connect('chainlogic_erp.db')
+        c = conn.cursor()
+        c.execute("DELETE FROM system_entities") # wipe old state
         
-        inv = live_ui_data["current_inventory"]
-        cost = live_ui_data["unit_cost"]
-        penalty = live_ui_data["daily_penalty"]
-        buyer = live_ui_data["buyer"]
-        
-        # Dynamic Risk Sentence!
-        decision_data["crisis_analysis"]["baseline_impact"] = f"Broken Cooling Unit detected. {inv} units at high risk. Spoilage cost is ${inv*cost:,.2f}. Failing {buyer} contract incurs additional ${penalty:,.2f} penalty."
-        decision_data["crisis_analysis"]["affected_component"]["sku"] = target_sku
-        
-        return decision_data
-        
+        for e in entities:
+            # Handle potential nested dicts securely via json.dumps
+            attrs = e.get("attributes", {})
+            attr_str = json.dumps(attrs) if isinstance(attrs, dict) else str(attrs)
+            
+            c.execute(
+                "INSERT INTO system_entities (id, domain, entity_type, entity_name, attributes) VALUES (?, ?, ?, ?, ?)",
+                (e.get("id", str(hash(e.get("entity_name")))), e.get("domain", "default"), e.get("entity_type", "entity"), e.get("entity_name", "Unnamed"), attr_str)
+            )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "entities": entities}
     except Exception as e:
-        return {"error": str(e)}
+        print("Failed to parse schema init: ", e)
+        raise HTTPException(status_code=500, detail="AI failed to build schema")
+
+@app.post("/api/generate-ledger-plan")
+async def generate_ledger_plan(request: LedgerRequest):
+    conn = sqlite3.connect('chainlogic_erp.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM system_entities")
+    rows = c.fetchall()
+    
+    # Unpack EAV JSON attributes back into query payload safely
+    erp_data = []
+    for r in rows:
+        d = dict(r)
+        if isinstance(d.get('attributes'), str):
+            try:
+                d['attributes'] = json.loads(d['attributes'])
+            except:
+                pass
+        erp_data.append(d)
+    
+    conn.close()
+
+    plugin_context = ""
+    map_schema_str = ""
+    if "weather" in request.active_plugins:
+        plugin_context += "WEATHER API: Severe thunderstorm warning active across the region. Transport speeds reduced by 40%.\n"
+    if "traffic" in request.active_plugins:
+        plugin_context += "TRAFFIC API: Federal Highway is backed up by 5km due to a localized accident.\n"
+    if "holiday" in request.active_plugins:
+        plugin_context += "CAMPUS CALENDAR API: Awal Muharram public holiday in effect. End-user traffic is currently down 85%.\n"
+    
+    if "routing" in request.active_plugins:
+        plugin_context += "ROUTING ENGINE API: The user explicitly requires a geographic map block to visualize logistics route.\n"
+        map_schema_str = '\n5. { "type": "map", "data": { "status": "incident" | "normal" } } (Required since the routing plugin is active)'
+    else:
+        plugin_context += "ROUTING RULE: Do NOT generate a 'map' block. The user has not requested map routing.\n"
+
+    system_instruction = f"""
+You are Z.AI, the Agentic Reasoner internally powering the 'ChainLogic' Smart Ledger for SMEs.
+You must analyze the user's operational notes in the context of their active plugins and dynamically generated ERP SQLite database records.
+
+Provide an actionable operations plan by emitting specifically formatted UI block objects.
+You have maximum flexibility to construct the UI response by stacking ANY combination of the following block types into the `blocks` array. 
+Choose ONLY the blocks that strategically make sense for the current situation. 
+- If the user is just asking for advice or leaving a minor note, use simple `text` blocks.
+- If it is a critical emergency, use `alert` and `action_cards`.
+- If actionable buttons are not needed, DO NOT output `action_cards`.
+The frontend UI will dynamically render exactly the sequence of blocks you choose to array.
+
+Available Block schemas:
+1. {{ "type": "text", "content": "..." }} (Standard analysis, advice, and insights)
+2. {{ "type": "alert", "content": "..." }} (Use ONLY for critical, urgent warnings or SLA breaches)
+3. {{ "type": "metric", "data": {{ "target": "...", "savings": "...", "reason": "..." }} }} (KPI tracking)
+4. {{ "type": "action_cards", "options": [ {{ "id": "A", "action": "...", "justification": "...", "impact": <integer_currency>, "recommended": true|false }} ] }} (IMPORTANT: Mark EXACTLY ONE option as recommended: true — the one you deem most optimal given the context. All others must be recommended: false){map_schema_str}
+
+You MUST reply with JSON matching this exact structure:
+
+{{
+  "ledger_date": "YYYY-MM-DD",
+  "blocks": [
+     // INSERT ANY DYNAMIC NUMBER AND COMBINATION OF THE AVAILABLE BLOCKS HERE THAT FITS THE SITUATION
+  ]
+}}
+
+DO NOT include markdown block formatting (e.g., ```json). Return ONLY pure JSON text.
+CRITICAL RULE: DO NOT hypothesize or hallucinate specific names (e.g., "Client B", "Supplier A") UNLESS they are explicitly written in the USER DOCUMENT TEXT. Keep inferences perfectly generalized or exactly literal to the text.
+CRITICAL FOCUS RULE: The USER DOCUMENT TEXT contains a full chronological log. Your response must ONLY analyze and act on the FINAL/MOST RECENT log entry. Do NOT re-summarize previous entries. Treat prior log entries as established background context only.
+CRITICAL NUMBERS RULE: When the user mentions rates, hours, percentages or financial impacts, you MUST calculate exact dollar amounts using data from the ERP database. Show the math result, not just the input (e.g., '4 extra hours x $100/hr = $400 cost overrun', '10% of $12,000 = $1,200 reduction').
+"""
+    
+    prompt = ""
+    if request.custom_context_notes:
+        prompt += f"CRITICAL HUMAN OVERRIDE CONTEXT:\n{request.custom_context_notes}\n(You MUST prioritize this human context above ERP database constraints when generating the operational plan metrics and justifications.)\n\n"
+        
+    prompt += f"LIVE EAV DATABASE RECORD:\n{json.dumps(erp_data)}\n\n"
+    if plugin_context:
+        prompt += f"LIVE DATA API CONTEXTS (Extremely Important):\n{plugin_context}\n\n"
+    prompt += f"USER DOCUMENT TEXT:\n{request.document_text}"
+
+    try:
+        response = client.chat.completions.create(
+          model="llama-3.3-70b-versatile",
+          messages=[
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": prompt}
+          ]
+        )
+        raw_text = response.choices[0].message.content
+        start = raw_text.find('{')
+        end = raw_text.rfind('}') + 1
+        if start != -1 and end != 0:
+            raw_text = raw_text[start:end]
+        else:
+            raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+            
+        data = json.loads(raw_text)
+        return data
+    except Exception as e:
+        error_msg = str(e)
+        print("GENERATE_CONTENT ERROR:", error_msg)
+        if "429" in error_msg:
+             raise HTTPException(status_code=429, detail="API Quota Exceeded. Please wait before generating again.")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {error_msg}")
 
 @app.post("/api/execute-decision")
-async def execute_decision(payload: dict):
-    option_id = payload.get("option_id")
-    target_sku = payload.get("sku", "POULTRY-WHOLE-A")
-    action_text = payload.get("action", "AI Automated Reroute")
-    
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
-    try:
-        if option_id == "C":
-             # Update buyer to Subang Grocer
-            cursor.execute("""
-                UPDATE delivery_schedule 
-                SET buyer_name = ?, 
-                    spoilage_penalty_rate = 0 
-                WHERE required_sku = ?
-            """, (f"FLASH-SALE: Subang Grocer (Rerouted)", target_sku))
-            
-        elif option_id == "B":
-             # Decrease profit margin by increasing cost theoretically
-            cursor.execute("""
-                UPDATE inventory 
-                SET unit_cost = unit_cost + 5.00
-                WHERE sku = ?
-            """, (target_sku,))
-        
-        conn.commit()
-        cursor.execute("SELECT buyer_name, spoilage_penalty_rate FROM delivery_schedule WHERE required_sku = ?", (target_sku,))
-        updated_row = cursor.fetchone()
-        
-        return {
-            "status": "success",
-            "message": "ERP Database Successfully Updated.",
-            "new_state": {"project": updated_row[0], "penalty": updated_row[1]}
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-    finally:
-        conn.close()
+async def execute_decision(request: ExecuteRequest):
+    return {"status": "success", "message": f"Executed action {request.action}"}

@@ -1,123 +1,116 @@
 # ChainLogic AI ⛓️🧠
 
-**An Agentic Supply Chain Decision Engine for Automotive SMEs.**
+**A Zero-Setup, Agentic ERP Operating System powered by AI.**
 
-ChainLogic AI is a closed-loop intelligence system designed to ingest unstructured supply chain disruptions (like supplier emails), query live ERP databases (SQLite), calculate financial trade-offs, and execute the mathematically optimal recovery plan directly back into the master database to prevent the Bullwhip Effect.
+ChainLogic AI is a composable, Jupyter-style operational ledger that dynamically architects its own database schema from plain-language business descriptions. Instead of forcing the user to adapt to a rigid database, the AI adapts the database to fit the user — any industry, any scale, zero configuration.
+
+---
+
+## ✨ Key Features
+
+- **Zero-Setup ERP** — Describe your business in plain English. Z.AI dynamically builds a generalized Entity-Attribute-Value (EAV) SQLite schema on-the-fly.
+- **Jupyter-Style Notebook Canvas** — Sequential, infinite-scroll ledger of operational log cells. Each cell captures a note, runs AI reasoning, and produces a structured output plan.
+- **Continuous Memory** — Z.AI reads every previous cell as cumulative context when reasoning about the newest entry, maintaining full operational continuity across the working day.
+- **Composable Plugin Context** — Drag-and-drop modifier cards (Live Weather, Traffic, Human Override, Routing Map) directly into any cell to enrich AI context dynamically.
+- **Human-in-the-Loop Override** — A dedicated plugin card lets the operator inject manual instructions that override AI constraints for the current cell.
+- **Z.AI Optimal Decision Ranking** — Action cards are semantically ranked. The model marks exactly one option as `recommended: true`, visually highlighted for rapid execution.
+- **Git-Like Operations Timeline** — A left-hand navigation tree shows all committed cells as nodes. Click any node to instantly scroll the canvas to that snapshot.
+- **Business Context Editor** — A persistent header button lets operators view and re-initialize the ERP schema at any time without losing their current log session.
 
 ---
 
 ## 🏗️ Architecture
 
-This project is built using a decoupled, full-stack architecture:
-* **Frontend:** React / Next.js (Tailwind CSS, Lucide Icons)
-* **Backend:** Python / FastAPI
-* **Database:** SQLite (Auto-seeded on startup)
-* **AI Engine:** Z.AI GLM (via RAG and Agentic Workflow)
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js App Router, Zustand, Tiptap, @dnd-kit |
+| **Backend** | Python, FastAPI, SQLite (EAV pattern) |
+| **AI Engine** | Groq (llama-3.3-70b-versatile) via OpenAI-compatible API |
+| **Design** | Vanilla CSS + Tailwind — "Dark Espresso" aesthetic |
 
 ### Project Structure
 ```text
-chainlogic-ai/
+ChainLogicAI/
 │
-├── backend/                # Python FastAPI Server & SQLite Database
-│   ├── main.py             # Core API logic, routing, and DB execution
+├── backend/
+│   ├── main.py             # FastAPI server — ERP init, ledger plan generation, decision execution
 │   ├── requirements.txt    # Python dependencies
-│   └── .gitignore          # Prevents venv and local DBs from uploading
+│   ├── .env                # API Keys (NOT committed to git)
+│   └── .gitignore
 │
-├── frontend/               # Next.js React Dashboard
-│   ├── src/app/page.tsx    # Main UI and Client-side logic
-│   ├── package.json        # Node dependencies
-│   └── tailwind.config.ts  # UI Styling configuration
+├── frontend/
+│   ├── src/app/page.tsx    # Main Jupyter-style UI and all client-side logic
+│   ├── src/store/          # Zustand state — LedgerCell[] per day tab
+│   ├── src/components/     # LogisticsMap, AnimatedTruckEdge, etc.
+│   └── package.json
 │
-└── README.md               
+└── README.md
 ```
 
-## 🔑 Environment Variables (API Keys)
+---
 
-To enable the live AI reasoning engine, you must provide a valid Z.AI API key locally. Never commit your real API key to GitHub.
+## 🔑 Environment Variables
 
-Navigate to the backend/ folder on your local machine.
+Create a `.env` file inside the `backend/` folder. It is safely ignored by Git.
 
-Create a new file named exactly .env
+```env
+GROQ_API_KEY=your_groq_api_key_here
+```
 
-Add your API key inside the file like this:
+Get a free Groq API key (30 RPM free tier) at: https://console.groq.com
 
-`Z_AI_API_KEY="insert_your_key_here"`
+> Optionally, you can also use the Google Gemini API by switching `base_url` in `main.py` to `https://generativelanguage.googleapis.com/v1beta/openai/` and setting `GEMINI_API_KEY`.
 
-(Note: The .env file is safely ignored by Git thanks to the .gitignore file).
+---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start
 
-To run this prototype locally, you will need to run the Backend and the Frontend simultaneously in two separate terminal windows.
+You need two terminals running simultaneously.
 
-### Prerequisites
+### Terminal 1 — Python Backend
 
-Python 3.9+
+```bash
+cd backend
+python -m venv venv
 
-Node.js 18+
+# Windows
+.\venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
 
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
-### Terminal 1: Start the AI Backend & Database
+Backend runs at `http://localhost:8000`
 
-1. Open a terminal and navigate to the backend directory:
+### Terminal 2 — Next.js Frontend
 
-`cd backend`
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
+Frontend runs at `http://localhost:3000`
 
-2. Create a virtual environment:
+---
 
-Windows: `python -m venv venv`
+## 🧪 How to Demo
 
-Mac/Linux: `python3 -m venv venv`
+1. Open `http://localhost:3000` in your browser.
+2. On the **Zero-Setup ERP** initialization screen, describe your business in plain English:
+   > *"I am a freelance UI designer. I track active corporate projects, an hourly billing rate of $100/hr, and maintain strict deployment SLAs."*
+3. Click **Initialize Universal Schema**. Z.AI will build your ERP entity database in seconds.
+4. In the Jupyter canvas, type your first operational log entry in the `In[1]` composer and hit **Commit Cell & Run Z.AI**.
+5. Review the structured output — metrics, alerts, and ranked action cards with a `⭐ Z.AI Optimal` recommendation.
+6. Drag modifier plugins (🌧️ Weather, 🚦 Traffic, 📝 Human Override) into the drop zone to enrich the AI context before committing the next cell.
+7. Repeat for subsequent cells. Z.AI automatically reads all previous entries as cumulative context.
 
+### Example Scenarios
 
-3. Activate the virtual environment:
-
-Windows: `.\venv\Scripts\activate`
-
-Mac/Linux: `source venv/bin/activate`
-
-
-4. Install the required dependencies:
-
-`pip install -r requirements.txt`
-
-
-5. Start the FastAPI server:
-
-`python -m uvicorn main:app --reload`
-
-(Note: On the first run, the server will automatically generate and seed the chainlogic_erp.db SQLite database).
-
-
-### Terminal 2: Start the React Dashboard
-
-1. Open a new, second terminal window and navigate to the frontend directory:
-
-`cd frontend`
-
-
-2. Install the Node modules (only needed the first time):
-
-`npm install`
-
-
-3. Start the Next.js development server:
-
-`npm run dev`
-
-
-4. Open your browser and navigate to http://localhost:3000 to view the dashboard
-
-## 🧪 How to Demo the Prototype
-
-1. Launch both the backend and frontend servers.
-
-2. Open the dashboard at http://localhost:3000.
-
-3. In the Corporate Inbox, paste a disruption scenario (e.g., "URGENT: Taiwan foundry delay. Our shipment of MCU-TC397-EVO microcontrollers will be delayed by 3 weeks.")
-
-4. Click Run Z.AI Decision Engine.
-
-5. Observe the Data Pipeline Viewer to see the exact SQLite rows the Agentic Extractor pulled to prevent hallucinations.
-
-6. Review the Trade-Off cards and click Execute Decision on the recommended path to write the new state back to the ERP database.
+| Business Type | Initialization Prompt |
+|---|---|
+| **Freelance Developer** | *"I am an independent software developer. I manage multiple active client contracts, strictly track my hourly billing rate at RM 150/hr, and oversee software maintenance SLAs."* |
+| **Nasi Lemak Seller** | *"I run a small nasi lemak stall near a university. I prepare 150 packets daily for local university cafes. Raw ingredients include fresh chicken, rice, and sambal, and I operate 6 days a week."* |
+| **Delivery Company** | *"I manage a last-mile delivery company with 5 delivery vans. I track daily route performance, driver shift SLAs, fuel costs, and package delivery success rates."* |
