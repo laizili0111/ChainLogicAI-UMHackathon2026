@@ -581,3 +581,333 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateX(-30px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+/* --- INBOX UI STYLES --- */
+
+.inbox-layout {
+  display: flex;
+  height: calc(100vh - 4rem);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.inbox-sidebar {
+  width: 240px;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 99px;
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.sidebar-item.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.inbox-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface-light);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inbox-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.inbox-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.email-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.email-item {
+  display: grid;
+  grid-template-columns: 200px 1fr 100px;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.email-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 4px 0 0 var(--primary);
+}
+
+.email-item.unread {
+  background: rgba(255, 255, 255, 0.02);
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.email-sender {
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.email-subject-snippet {
+  display: flex;
+  gap: 0.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.email-subject {
+  color: var(--text-main);
+}
+
+.email-snippet {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.email-date {
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* Email Detail View */
+.email-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  animation: slideInRight 0.4s cubic-bezier(0, 0, 0.2, 1);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detail-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.detail-subject {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+}
+
+.detail-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sender-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sender-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+}
+
+.sender-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.sender-name {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.sender-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.detail-body {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  line-height: 1.6;
+  color: var(--text-dark);
+  font-size: 1rem;
+}
+
+.detail-footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+.btn-ai-analyze {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 99px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-ai-analyze:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6);
+}
+
+.sparkle-icon {
+  animation: rotateSparkle 3s linear infinite;
+}
+
+@keyframes rotateSparkle {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* --- DETAILED COMPUTATION ACCORDION --- */
+
+.btn-detail-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  transition: color 0.2s;
+  margin-top: 0.5rem;
+}
+
+.btn-detail-toggle:hover {
+  color: var(--primary);
+}
+
+.chevron-icon {
+  transition: transform 0.3s ease;
+}
+
+.chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.detailed-computation {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.detailed-computation.open {
+  max-height: 1000px;
+  transition: max-height 0.4s cubic-bezier(1, 0, 1, 0);
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+}
+
+.computation-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.comp-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.comp-label {
+  color: var(--text-muted);
+}
+
+.comp-value {
+  color: var(--text-main);
+  font-family: ui-monospace, monospace;
+}
+
+.comp-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}
+
+.comp-total {
+  font-weight: 700;
+  color: var(--warning);
+}

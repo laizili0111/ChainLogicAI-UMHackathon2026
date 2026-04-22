@@ -1,7 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, TrendingDown, CheckCircle, Database, ArrowRight, Code } from "lucide-react";
+import { 
+  AlertTriangle, 
+  TrendingDown, 
+  CheckCircle, 
+  Database, 
+  ArrowRight, 
+  Code, 
+  ChevronDown, 
+  Info,
+  ArrowLeft,
+  Activity
+} from "lucide-react";
+import InboxView, { Email } from "./InboxView";
 
 // --- UPDATED TYPESCRIPT INTERFACES ---
 interface ContextualData {
@@ -23,24 +35,142 @@ interface InsightData {
   glm_recommendation: GlmRecommendation; 
 }
 
-export default function Dashboard() {
+// --- SUB-COMPONENT: TRADE-OFF CARD ---
+function TradeOffCard({ 
+  option, 
+  isRecommended, 
+  executedOption, 
+  handleExecute,
+  contextualData 
+}: { 
+  option: TradeOffOption; 
+  isRecommended: boolean; 
+  executedOption: string | null;
+  handleExecute: (id: string, text: string) => void;
+  contextualData: ContextualData;
+}) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Simple mock math for demonstration
+  const calculateMath = () => {
+    const penalty = contextualData.daily_penalty;
+    const impact = option.financial_impact.net_financial_impact;
+    
+    if (option.option_id === "C") {
+      return {
+        formula: "Penalty Avoidance = Daily Penalty × Days Delay",
+        math: `$${penalty.toLocaleString()} × 0 = $0 (Schedule Shift)`,
+        justification: "Zero capital expenditure. Eliminates downtime penalty by reallocating existing resources."
+      };
+    } else if (option.option_id === "A") {
+      return {
+        formula: "Net Impact = -(Expedite Fee + Sourcing Premium)",
+        math: `-$5,000 (Air) - $3,500 (Premium) = $${impact.toLocaleString()}`,
+        justification: "Maintains production timeline but sacrifices unit margin to protect customer delivery SLAs."
+      };
+    }
+    return { formula: "Calculation pending...", math: "N/A", justification: option.justification };
+  };
+
+  const details = calculateMath();
+
+  return (
+    <div className={`card ${isRecommended ? "recommended" : ""}`}>
+      <div>
+        {isRecommended && (
+          <div className="badge-recommended">
+            <CheckCircle size={12} /> RECOMMENDED
+          </div>
+        )}
+        
+        <h4 className="card-title">
+          Option {option.option_id}: {option.action}
+        </h4>
+        
+        <div className="card-impact">
+          <div className={`impact-value ${option.financial_impact.net_financial_impact < 0 ? 'negative' : 'neutral'}`}>
+            <TrendingDown size={28} />
+            ${Math.abs(option.financial_impact.net_financial_impact).toLocaleString()}
+          </div>
+          <div className="impact-label">Net Financial Impact</div>
+        </div>
+
+        <div className="card-reasoning">
+          <span className="reasoning-label">Z.AI Reasoning: </span>
+          {option.justification}
+        </div>
+
+        {/* TASK 3: Detailed Computation Accordion */}
+        <button 
+          className="btn-detail-toggle"
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          {showDetails ? <Info size={14} /> : <ChevronDown size={14} className="chevron-icon" />}
+          {showDetails ? "Hide Computation" : "View Detailed Computation"}
+        </button>
+
+        <div className={`detailed-computation ${showDetails ? "open" : ""}`}>
+          <div className="computation-grid">
+            <div className="comp-row">
+              <span className="comp-label">Base Logic:</span>
+              <span className="comp-value">{details.formula}</span>
+            </div>
+            <div className="comp-divider"></div>
+            <div className="comp-row">
+              <span className="comp-label">GLM Breakdown:</span>
+              <span className="comp-value">{details.math}</span>
+            </div>
+            <div className="comp-row">
+              <span className="comp-label">ERP Context:</span>
+              <span className="comp-value">{contextualData.sku} Stock: {contextualData.current_inventory}</span>
+            </div>
+            <div className="comp-divider"></div>
+            <div className="comp-row comp-total">
+              <span className="comp-label">Net Result:</span>
+              <span className="comp-value">${option.financial_impact.net_financial_impact.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card-actions">
+        <button
+          onClick={() => handleExecute(option.option_id, option.action)}
+          disabled={executedOption !== null}
+          className={`btn-execute ${executedOption === option.option_id ? "executed" : ""}`}
+        >
+          {executedOption === option.option_id ? "✓ ERP Updated" : "Execute Decision"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState<"inbox" | "dashboard">("inbox");
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  const [emailText, setEmailText] = useState(
-    "URGENT from Munich Precision: Customs strike at Hamburg port. Shipment of 40 AE-V8-SENS units delayed by 14 days. Please advise."
-  );
-
+  const [activeEmail, setActiveEmail] = useState<Email | null>(null);
+  const [emailText, setEmailText] = useState("");
   const [executedOption, setExecutedOption] = useState<string | null>(null);
 
-  const handleAnalyze = async () => {
+  const handleStartAnalysis = (email: Email) => {
+    setActiveEmail(email);
+    setEmailText(email.body);
+    setView("dashboard");
+    // Trigger analysis automatically
+    performAnalysis(`Subject: ${email.subject}\n\n${email.body}`);
+  };
+
+  const performAnalysis = async (text: string) => {
     setLoading(true);
     setInsight(null);
+    setExecutedOption(null);
     try {
       const response = await fetch("http://localhost:8000/api/analyze-crisis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger_text: emailText }),
+        body: JSON.stringify({ trigger_text: text }),
       });
       const data: InsightData = await response.json();
       setInsight(data);
@@ -56,7 +186,7 @@ export default function Dashboard() {
       const response = await fetch("http://localhost:8000/api/execute-decision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ option_id: option_id, sku: "AE-V8-SENS", action: action_text }),
+        body: JSON.stringify({ option_id: option_id, sku: insight?.contextual_data_retrieved.sku || "AE-V8-SENS", action: action_text }),
       });
       const data = await response.json();
       if (data.status === "success") {
@@ -71,154 +201,129 @@ export default function Dashboard() {
     <main className="app-container">
       {/* HEADER */}
       <header className="app-header">
-        <div>
-          <h1 className="app-title">ChainLogic AI</h1>
-          <p className="app-subtitle">Decision Intelligence for Automotive SMEs</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          {view === "dashboard" && (
+            <button className="action-btn" onClick={() => setView("inbox")} title="Back to Inbox">
+              <ArrowLeft size={24} />
+            </button>
+          )}
+          <div>
+            <h1 className="app-title">ChainLogic AI</h1>
+            <p className="app-subtitle">Decision Intelligence for Automotive SMEs</p>
+          </div>
         </div>
         <div className="status-badge">
           <Database size={16} /> ERP Connected: SQLite
         </div>
       </header>
 
-      {/* THE INGESTION PANEL (Corporate Email) */}
-      <section className="glass-panel ingestion-panel">
-        <header className="panel-header">
-          <div className="window-controls">
-            <div className="control-dot dot-red"></div>
-            <div className="control-dot dot-yellow"></div>
-            <div className="control-dot dot-green"></div>
-          </div>
-          <span className="panel-label">Secure Mail Client</span>
-        </header>
+      {view === "inbox" ? (
+        <InboxView onAnalyze={handleStartAnalysis} />
+      ) : (
+        <div className="dashboard-view">
+          {/* THE INGESTION PANEL (Condensed for Dashboard) */}
+          <section className="glass-panel ingestion-panel" style={{ marginBottom: '2rem' }}>
+            <header className="panel-header">
+              <div className="window-controls">
+                <div className="control-dot dot-red"></div>
+                <div className="control-dot dot-yellow"></div>
+                <div className="control-dot dot-green"></div>
+              </div>
+              <span className="panel-label">Active Analysis Context</span>
+            </header>
 
-        <div className="email-meta">
-          <div className="meta-row">
-            <span className="meta-label">From:</span>
-            <span className="meta-value">logistics@munich-precision.de</span>
-          </div>
-          <div className="meta-row mt">
-            <span className="meta-label">Subject:</span>
-            <span className="meta-value urgent">URGENT: Hamburg Port Strike - Shipment Delayed</span>
-          </div>
-        </div>
-
-        <div className="email-body">
-          <textarea
-            className="email-textarea"
-            rows={3}
-            value={emailText}
-            onChange={(e) => setEmailText(e.target.value)}
-            spellCheck="false"
-          />
-        </div>
-
-        <footer className="panel-footer">
-          <p className="footer-note">
-            * ChainLogic AI will parse this unstructured text, query the SQLite database, and calculate trade-offs.
-          </p>
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            className="btn btn-primary"
-          >
-            {loading ? "Fusing Data..." : "Run Z.AI Decision Engine"}
-            {!loading && <ArrowRight size={18} />}
-          </button>
-        </footer>
-      </section>
-
-      {/* AI PARSING LOADING STATE */}
-      {loading && (
-        <div className="loading-state">
-          <div className="loader-icon">
-            <div className="loader-ring"></div>
-            <Database size={40} />
-          </div>
-          <h3 className="loading-title">Z.AI GLM is Processing</h3>
-          <div className="loading-text">Querying SQLite & Formulating Trade-offs...</div>
-        </div>
-      )}
-
-      {/* STRUCTURED OUTPUT & DATA TRANSPARENCY */}
-      {insight && !loading && (
-        <div>
-          {/* DATA TRANSPARENCY TOGGLE */}
-          <details className="data-viewer">
-            <summary className="viewer-summary">
-              <Code size={20} />
-              Data Pipeline Viewer
-            </summary>
-            <div className="viewer-content">
-              <p className="code-comment"># 1. Unstructured entity extracted: {insight.contextual_data_retrieved.sku}</p>
-              <p className="code-comment"># 2. Executing query: SELECT * FROM inventory WHERE sku = &apos;{insight.contextual_data_retrieved.sku}&apos;;</p>
-              <p className="code-comment"># 3. Data retrieved successfully:</p>
-              <p>{`{`}</p>
-              <p>&nbsp;&nbsp;&quot;current_stock&quot;: <span className="code-number">{insight.contextual_data_retrieved.current_inventory}</span>,</p>
-              <p>&nbsp;&nbsp;&quot;unit_cost&quot;: <span className="code-number">${insight.contextual_data_retrieved.unit_cost}</span>,</p>
-              <p>&nbsp;&nbsp;&quot;downtime_penalty_rate&quot;: <span className="code-number">${insight.contextual_data_retrieved.daily_penalty}/day</span></p>
-              <p>{`}`}</p>
-              <p className="code-success">STATUS: Data successfully fused with text prompt and sent to Z.AI GLM.</p>
+            <div className="email-meta">
+              <div className="meta-row">
+                <span className="meta-label">From:</span>
+                <span className="meta-value">{activeEmail?.senderEmail || "logistics@munich-precision.de"}</span>
+              </div>
+              <div className="meta-row mt">
+                <span className="meta-label">Subject:</span>
+                <span className="meta-value urgent">{activeEmail?.subject || "URGENT: Disruption Alert"}</span>
+              </div>
             </div>
-          </details>
 
-          {/* CRISIS ALERT BANNER */}
-          <div className="crisis-banner">
-            <AlertTriangle className="crisis-icon" size={32} />
+            <div className="email-body" style={{ background: 'rgba(59, 130, 246, 0.05)' }}>
+              <textarea
+                className="email-textarea"
+                rows={8}
+                value={emailText}
+                onChange={(e) => setEmailText(e.target.value)}
+                spellCheck="false"
+              />
+            </div>
+
+            <footer className="panel-footer">
+              <div className="footer-note" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Activity size={14} /> AI is currently evaluating this disruption scenario.
+              </div>
+              <button
+                onClick={() => performAnalysis(`Subject: ${activeEmail?.subject || ''}\n\n${emailText}`)}
+                disabled={loading}
+                className="btn btn-primary"
+              >
+                {loading ? "Fusing Data..." : "Re-Run Analysis"}
+                {!loading && <ArrowRight size={18} />}
+              </button>
+            </footer>
+          </section>
+
+          {/* AI PARSING LOADING STATE */}
+          {loading && (
+            <div className="loading-state">
+              <div className="loader-icon">
+                <div className="loader-ring"></div>
+                <Database size={40} />
+              </div>
+              <h3 className="loading-title">Z.AI GLM is Processing</h3>
+              <div className="loading-text">Querying SQLite & Formulating Trade-offs...</div>
+            </div>
+          )}
+
+          {/* STRUCTURED OUTPUT & DATA TRANSPARENCY */}
+          {insight && !loading && (
             <div>
-              <h2 className="crisis-title">CRITICAL DISRUPTION: {insight.crisis_analysis.affected_component.sku}</h2>
-              <p className="crisis-desc">{insight.crisis_analysis.baseline_impact}</p>
-            </div>
-          </div>
-
-          {/* TRADE-OFF OPTIONS */}
-          <h3 className="section-title">AI Trade-off Analysis</h3>
-          <div className="cards-grid">
-            {insight.trade_off_options.map((option: TradeOffOption) => {
-              const isRecommended = option.option_id === insight.glm_recommendation.primary_choice;
-              
-              return (
-                <div 
-                  key={option.option_id} 
-                  className={`card ${isRecommended ? "recommended" : ""}`}
-                >
-                  <div>
-                    {isRecommended && (
-                      <div className="badge-recommended">
-                        <CheckCircle size={12} /> RECOMMENDED
-                      </div>
-                    )}
-                    
-                    <h4 className="card-title">
-                      Option {option.option_id}: {option.action}
-                    </h4>
-                    
-                    <div className="card-impact">
-                      <div className={`impact-value ${option.financial_impact.net_financial_impact < 0 ? 'negative' : 'neutral'}`}>
-                        <TrendingDown size={28} />
-                        ${Math.abs(option.financial_impact.net_financial_impact).toLocaleString()}
-                      </div>
-                      <div className="impact-label">Net Financial Impact</div>
-                    </div>
-
-                    <div className="card-reasoning">
-                      <span className="reasoning-label">Z. AI Reasoning: </span>
-                      {option.justification}
-                    </div>
-                  </div>
-
-                  <div className="card-actions">
-                    <button
-                      onClick={() => handleExecute(option.option_id, option.action)}
-                      disabled={executedOption !== null}
-                      className={`btn-execute ${executedOption === option.option_id ? "executed" : ""}`}
-                    >
-                      {executedOption === option.option_id ? "✓ ERP Updated" : "Execute Decision"}
-                    </button>
-                  </div>
+              <details className="data-viewer">
+                <summary className="viewer-summary">
+                  <Code size={20} />
+                  Data Pipeline Viewer
+                </summary>
+                <div className="viewer-content">
+                  <p className="code-comment"># 1. Unstructured entity extracted: {insight.contextual_data_retrieved.sku}</p>
+                  <p className="code-comment"># 2. Executing query: SELECT * FROM inventory WHERE sku = &apos;{insight.contextual_data_retrieved.sku}&apos;;</p>
+                  <p className="code-comment"># 3. Data retrieved successfully:</p>
+                  <p>{`{`}</p>
+                  <p>&nbsp;&nbsp;&quot;current_stock&quot;: <span className="code-number">{insight.contextual_data_retrieved.current_inventory}</span>,</p>
+                  <p>&nbsp;&nbsp;&quot;unit_cost&quot;: <span className="code-number">${insight.contextual_data_retrieved.unit_cost}</span>,</p>
+                  <p>&nbsp;&nbsp;&quot;downtime_penalty_rate&quot;: <span className="code-number">${insight.contextual_data_retrieved.daily_penalty}/day</span></p>
+                  <p>{`}`}</p>
+                  <p className="code-success">STATUS: Data successfully fused with text prompt and sent to Z.AI GLM.</p>
                 </div>
-              );
-            })}
-          </div>
+              </details>
+
+              <div className="crisis-banner">
+                <AlertTriangle className="crisis-icon" size={32} />
+                <div>
+                  <h2 className="crisis-title">CRITICAL DISRUPTION: {insight.crisis_analysis.affected_component.sku}</h2>
+                  <p className="crisis-desc">{insight.crisis_analysis.baseline_impact}</p>
+                </div>
+              </div>
+
+              <h3 className="section-title">AI Trade-off Analysis</h3>
+              <div className="cards-grid">
+                {insight.trade_off_options.map((option: TradeOffOption) => (
+                  <TradeOffCard 
+                    key={option.option_id}
+                    option={option}
+                    isRecommended={option.option_id === insight.glm_recommendation.primary_choice}
+                    executedOption={executedOption}
+                    handleExecute={handleExecute}
+                    contextualData={insight.contextual_data_retrieved}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </main>

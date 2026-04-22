@@ -272,7 +272,7 @@ async def execute_decision(payload: dict):
                 SET project_name = ?, 
                     daily_downtime_penalty = 0 
                 WHERE required_sku = ?
-            """, (f"RESCHEDULED: {action_text}", target_sku))
+            """, (f"RESCHEDULED [{target_sku}]: {action_text}", target_sku))
             
         elif option_id == "A":
             # We can still hardcode the math for safety, but use dynamic logging
