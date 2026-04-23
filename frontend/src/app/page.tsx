@@ -26,7 +26,8 @@ interface ContextualData {
 interface Component { sku: string; name: string; }
 interface CrisisAnalysis { status: string; affected_component: Component; baseline_impact: string; }
 interface FinancialImpact { net_financial_impact: number; }
-interface TradeOffOption { option_id: string; action: string; justification: string; financial_impact: FinancialImpact; }
+interface ComputationBreakdown { formula: string; math: string; }
+interface TradeOffOption { option_id: string; action: string; justification: string; financial_impact: FinancialImpact; computation_breakdown?: ComputationBreakdown; }
 interface GlmRecommendation { primary_choice: string; explainability: string; }
 interface InsightData { 
   contextual_data_retrieved: ContextualData; 
@@ -51,25 +52,22 @@ function TradeOffCard({
 }) {
   const [showDetails, setShowDetails] = useState(false);
 
-  // Simple mock math for demonstration
+  // Use dynamic math breakdown from Z.AI if available
   const calculateMath = () => {
-    const penalty = contextualData.daily_penalty;
-    const impact = option.financial_impact.net_financial_impact;
-    
-    if (option.option_id === "C") {
+    if (option.computation_breakdown) {
       return {
-        formula: "Penalty Avoidance = Daily Penalty × Days Delay",
-        math: `$${penalty.toLocaleString()} × 0 = $0 (Schedule Shift)`,
-        justification: "Zero capital expenditure. Eliminates downtime penalty by reallocating existing resources."
-      };
-    } else if (option.option_id === "A") {
-      return {
-        formula: "Net Impact = -(Expedite Fee + Sourcing Premium)",
-        math: `-$5,000 (Air) - $3,500 (Premium) = $${impact.toLocaleString()}`,
-        justification: "Maintains production timeline but sacrifices unit margin to protect customer delivery SLAs."
+        formula: option.computation_breakdown.formula,
+        math: option.computation_breakdown.math,
+        justification: option.justification
       };
     }
-    return { formula: "Calculation pending...", math: "N/A", justification: option.justification };
+
+    // Fallback if computation_breakdown is missing (e.g., from an older backend version or error state)
+    return { 
+      formula: "Dynamic breakdown unavailable", 
+      math: `Net Impact: $${option.financial_impact.net_financial_impact.toLocaleString()}`, 
+      justification: option.justification 
+    };
   };
 
   const details = calculateMath();
@@ -255,7 +253,7 @@ export default function App() {
 
             <footer className="panel-footer">
               <div className="footer-note" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Activity size={14} /> AI is currently evaluating this disruption scenario.
+                <Activity size={14} /> {loading ? "AI is currently evaluating this disruption scenario." : (insight ? "Z.AI GLM analysis complete. Options formulated." : "Ready to analyze disruption scenario.")}
               </div>
               <button
                 onClick={() => performAnalysis(`Subject: ${activeEmail?.subject || ''}\n\n${emailText}`)}
@@ -301,27 +299,47 @@ export default function App() {
                 </div>
               </details>
 
-              <div className="crisis-banner">
-                <AlertTriangle className="crisis-icon" size={32} />
-                <div>
-                  <h2 className="crisis-title">CRITICAL DISRUPTION: {insight.crisis_analysis.affected_component.sku}</h2>
-                  <p className="crisis-desc">{insight.crisis_analysis.baseline_impact}</p>
+              {insight.crisis_analysis.status === "SAFE" ? (
+                <div className="safe-banner" style={{ display: 'flex', alignItems: 'center', background: 'rgba(34, 197, 94, 0.1)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.3)', marginBottom: '2rem' }}>
+                  <CheckCircle className="safe-icon" size={32} style={{ color: '#22c55e', marginRight: '1rem' }} />
+                  <div>
+                    <h2 className="safe-title" style={{ margin: 0, color: '#22c55e', fontSize: '1.25rem' }}>SAFE STATE: {insight.crisis_analysis.affected_component.sku}</h2>
+                    <p className="safe-desc" style={{ margin: '0.5rem 0 0 0', color: '#e2e8f0', opacity: 0.9 }}>{insight.crisis_analysis.baseline_impact}</p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="crisis-banner">
+                  <AlertTriangle className="crisis-icon" size={32} />
+                  <div>
+                    <h2 className="crisis-title">CRITICAL DISRUPTION: {insight.crisis_analysis.affected_component.sku}</h2>
+                    <p className="crisis-desc">{insight.crisis_analysis.baseline_impact}</p>
+                  </div>
+                </div>
+              )}
 
-              <h3 className="section-title">AI Trade-off Analysis</h3>
-              <div className="cards-grid">
-                {insight.trade_off_options.map((option: TradeOffOption) => (
-                  <TradeOffCard 
-                    key={option.option_id}
-                    option={option}
-                    isRecommended={option.option_id === insight.glm_recommendation.primary_choice}
-                    executedOption={executedOption}
-                    handleExecute={handleExecute}
-                    contextualData={insight.contextual_data_retrieved}
-                  />
-                ))}
-              </div>
+              {insight.trade_off_options && insight.trade_off_options.length > 0 && (
+                <>
+                  <h3 className="section-title">AI Trade-off Analysis</h3>
+                  <div className="cards-grid">
+                    {insight.trade_off_options.map((option: TradeOffOption) => (
+                      <TradeOffCard 
+                        key={option.option_id}
+                        option={option}
+                        isRecommended={option.option_id === insight.glm_recommendation.primary_choice}
+                        executedOption={executedOption}
+                        handleExecute={handleExecute}
+                        contextualData={insight.contextual_data_retrieved}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+              {insight.crisis_analysis.status === "SAFE" && (
+                <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>Z.AI System Recommendation</h3>
+                  <p style={{ margin: 0, opacity: 0.9 }}>{insight.glm_recommendation.explainability}</p>
+                </div>
+              )}
             </div>
           )}
         </div>

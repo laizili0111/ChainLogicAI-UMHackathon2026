@@ -141,7 +141,42 @@ def startup_event():
     print("Database Initialized Successfully.")
 
 # 3. The API Endpoint for the React Dashboard
-# import z_ai_sdk  <-- Import the actual hackathon SDK here
+import urllib.request
+import urllib.error
+
+# --- Z.AI API CONFIGURATION ---
+from dotenv import load_dotenv
+load_dotenv()
+
+Z_AI_API_KEY = os.getenv("Z_AI_API_KEY")
+Z_AI_BASE_URL = os.getenv("Z_AI_BASE_URL", "https://api.ilmu.ai/v1/chat/completions")
+Z_AI_MODEL = os.getenv("Z_AI_MODEL", "ilmu-glm-5.1")
+
+def call_z_ai(system_prompt: str, user_prompt: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {Z_AI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": user_prompt})
+    
+    data = {
+        "model": Z_AI_MODEL,
+        "messages": messages
+    }
+    
+    req = urllib.request.Request(Z_AI_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
+    try:
+        with urllib.request.urlopen(req) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            return result["choices"][0]["message"]["content"]
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8')
+        print(f"Z.AI API Error ({e.code}): {err_body}")
+        raise Exception(f"Z.AI API Error: {err_body}")
+
 
 # --- THE Z.AI SYSTEM PROMPT ---
 # This is the "brain" of application. It dictates exactly how the AI behaves.
@@ -167,7 +202,11 @@ Your JSON output must perfectly match this exact schema:
       "option_id": "string (A, B, C)",
       "action": "string",
       "justification": "string (A brief 1-sentence explanation of why this option is viable and its trade-offs)",
-      "financial_impact": { "net_financial_impact": number (Use negative numbers for costs) }
+      "financial_impact": { "net_financial_impact": number (Use negative numbers for costs) },
+      "computation_breakdown": {
+        "formula": "string (e.g., 'Net Impact = -(Expedite Fee + Sourcing Premium)')",
+        "math": "string (Show the math breakdown, e.g., '-$5,000 - $3,500 = -$8,500')"
+      }
     }
   ],
   "glm_recommendation": {
@@ -202,7 +241,7 @@ def fetch_erp_data_dict(sku: str):
     cursor.execute("SELECT * FROM inventory_parts WHERE sku = ?", (sku,))
     inv_data = cursor.fetchone()
     cursor.execute("""
-        SELECT pj.* FROM production_jobs pj
+        SELECT pj.*, jr.required_quantity FROM production_jobs pj
         JOIN job_requirements jr ON pj.job_id = jr.job_id
         JOIN inventory_parts ip ON jr.part_id = ip.part_id
         WHERE ip.sku = ?
@@ -213,9 +252,11 @@ def fetch_erp_data_dict(sku: str):
     if inv_data and prod_data:
         return {
             "sku": sku,
+            "part_name": inv_data[2],
             "current_inventory": inv_data[5],  # This grabs the LIVE stock number!
             "unit_cost": inv_data[7],
             "daily_penalty": prod_data[3],
+            "required_quantity": prod_data[4],
             "database_status": "200 OK - Read Successful"
         }
     return None
@@ -223,17 +264,21 @@ def fetch_erp_data_dict(sku: str):
 def extract_sku_from_trigger(email_text: str) -> str:
     """
     Step 1 of the Agentic Workflow. 
-    In production, this is a fast Z.AI prompt. For the hackathon MVP, we simulate the AI's extraction using a Regex pattern matching typical automotive SKUs.
+    Calls Z.AI to extract the SKU dynamically.
     """
-    # ---------------------------------------------------------
-    # TODO (When API arrives): 
-    # prompt = f"Extract the specific part number/SKU from this text. Output ONLY the SKU string. Text: {email_text}"
-    # response = z_ai_client.generate(prompt)
-    # return response.text.strip()
-    # ---------------------------------------------------------
+    prompt = f"Extract the specific part number/SKU from this text. Output ONLY the SKU string, no other words. Text: {email_text}"
     
-    # -- MOCK AI EXTRACTION --
-    # This regex looks for patterns like "AE-V8-SENS" (letters/numbers separated by hyphens)
+    try:
+        ai_response = call_z_ai("", prompt)
+        sku = ai_response.strip()
+        # Clean up any potential markdown or extra spaces
+        match = re.search(r'[A-Z0-9]{2,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}', sku.upper())
+        if match:
+            return match.group(0)
+    except Exception as e:
+        print(f"Extraction AI failed, falling back to Regex: {e}")
+    
+    # Fallback regex if AI fails (e.g. subscription error)
     match = re.search(r'[A-Z0-9]{2,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}', email_text.upper())
     
     if match:
@@ -263,38 +308,83 @@ async def analyze_crisis(trigger_data: dict):
          return {
             "error": f"SKU '{target_sku}' extracted from text, but it does not exist in the Enterprise Database master records."
             }
+            
+    # --- NEW: SHORT-CIRCUIT FOR SAFE STATE ---
+    # If the penalty is already 0 (e.g., project was rescheduled) or we have enough stock.
+    current_stock = live_ui_data["current_inventory"]
+    req_qty = live_ui_data["required_quantity"]
+    penalty = live_ui_data["daily_penalty"]
     
-    # 2. This is the hardcoded AI response (until getting the API key)
-    ai_json_string = """
-    {
-        "crisis_analysis": {
-            "status": "CRITICAL",
-            "affected_component": { "sku": "AE-V8-SENS", "name": "High-Fidelity Acoustic Emission Sensor" },
-            "baseline_impact": "Will be dynamically updated below."
-        },
-        "trade_off_options": [
-            {
-                "option_id": "A",
-                "action": "Air Freight via Secondary EU Supplier",
-                "justification": "Fastest recovery time, but incurs a severe premium shipping cost that impacts profit margins.",
-                "financial_impact": { "net_financial_impact": -8500 }
+    if penalty == 0 or current_stock >= req_qty:
+        return {
+            "crisis_analysis": {
+                "status": "SAFE",
+                "affected_component": { "sku": target_sku, "name": live_ui_data["part_name"] },
+                "baseline_impact": f"Stock levels are sufficient ({current_stock}/{req_qty}) or project is safely handled (Risk: ${penalty:,.2f}/day)."
             },
-            {
-                "option_id": "C",
-                "action": "Reschedule Rig B to V6 Engine Variant Testing",
-                "justification": "Swapping the testing schedule entirely avoids the downtime penalty and requires zero additional capital.",
-                "financial_impact": { "net_financial_impact": 0 }
-            }
-        ],
-        "glm_recommendation": {
-            "primary_choice": "C",
-            "explainability": "Option C mitigates the daily penalty and avoids an expedite fee."
+            "trade_off_options": [],
+            "glm_recommendation": {
+                "primary_choice": "N/A",
+                "explainability": "The system has verified that there is no imminent production risk requiring action."
+            },
+            "contextual_data_retrieved": live_ui_data
         }
-    }
-    """
+    
+    # 2. This calls the live Z.AI reasoning engine
+    user_prompt = f"UNSTRUCTURED TRIGGER: {incoming_email}\n\nSTRUCTURED ERP CONTEXT:\n{erp_context_string}"
     
     try:
-        # 3. Convert string to Python dictionary
+        ai_json_string = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
+    except Exception as e:
+        # Fallback to hardcoded mock if API fails (e.g. model subscription error)
+        print("Falling back to hardcoded mock due to API error:", e)
+        ai_json_string = """
+        {
+            "crisis_analysis": {
+                "status": "CRITICAL",
+                "affected_component": { "sku": "AE-V8-SENS", "name": "High-Fidelity Acoustic Emission Sensor" },
+                "baseline_impact": "Will be dynamically updated below."
+            },
+            "trade_off_options": [
+                {
+                    "option_id": "A",
+                    "action": "Air Freight via Secondary EU Supplier",
+                    "justification": "Fastest recovery time, but incurs a severe premium shipping cost that impacts profit margins.",
+                    "financial_impact": { "net_financial_impact": -8500 },
+                    "computation_breakdown": {
+                        "formula": "Net Impact = -(Expedite Fee + Sourcing Premium)",
+                        "math": "-$5,000 (Air) - $3,500 (Premium) = -$8,500"
+                    }
+                },
+                {
+                    "option_id": "C",
+                    "action": "Reschedule Rig B to V6 Engine Variant Testing",
+                    "justification": "Swapping the testing schedule entirely avoids the downtime penalty and requires zero additional capital.",
+                    "financial_impact": { "net_financial_impact": 0 },
+                    "computation_breakdown": {
+                        "formula": "Penalty Avoidance = Daily Penalty × Days Delay",
+                        "math": "$12,500 × 0 = $0 (Schedule Shift)"
+                    }
+                }
+            ],
+            "glm_recommendation": {
+                "primary_choice": "C",
+                "explainability": "Option C mitigates the daily penalty and avoids an expedite fee."
+            }
+        }
+        """
+
+    try:
+        # 3. Clean up formatting and convert string to Python dictionary
+        ai_json_string = ai_json_string.strip()
+        if ai_json_string.startswith("```json"):
+            ai_json_string = ai_json_string[7:]
+        if ai_json_string.startswith("```"):
+            ai_json_string = ai_json_string[3:]
+        if ai_json_string.endswith("```"):
+            ai_json_string = ai_json_string[:-3]
+        ai_json_string = ai_json_string.strip()
+        
         decision_data = json.loads(ai_json_string)
         
         # 4. 🔥 THE MAGIC STEP: Inject the live SQLite data into the dictionary
@@ -314,39 +404,55 @@ async def analyze_crisis(trigger_data: dict):
 
 @app.post("/api/execute-decision")
 async def execute_decision(payload: dict):
-    option_id = payload.get("option_id")
-    target_sku = payload.get("sku", "AE-V8-SENS")
-    # Grab the dynamic text generated by the AI
+    # 1. Retrieve the dynamic data passed from the frontend
+    option_id = payload.get("option_id", "N/A")
+    target_sku = payload.get("sku")
     action_text = payload.get("action", "AI Automated Adjustment")
+    
+    # Financial impact might come nested or direct depending on UI
+    financial_impact = payload.get("financial_impact", 0)
+    
+    if not target_sku:
+        return {"status": "error", "message": "SKU is missing from the payload."}
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
     try:
-        if option_id == "C":
-            # Inject the AI's exact text into the database!
-            cursor.execute("""
-                UPDATE production_jobs 
-                SET project_name = ?, 
-                    daily_downtime_penalty = 0 
-                WHERE job_id IN (
-                    SELECT pj.job_id FROM production_jobs pj
-                    JOIN job_requirements jr ON pj.job_id = jr.job_id
-                    JOIN inventory_parts ip ON jr.part_id = ip.part_id
-                    WHERE ip.sku = ?
-                )
-            """, (f"RESCHEDULED [{target_sku}]: {action_text}", target_sku))
-            
-        elif option_id == "A":
-            # We can still hardcode the math for safety, but use dynamic logging
-            cursor.execute("""
-                UPDATE inventory_parts 
-                SET unit_cost = unit_cost + 212.50
-                WHERE sku = ?
-            """, (target_sku,))
+        # --- FULLY DYNAMIC CLOSED LOOP EXECUTION ---
+        
+        # 1. Update the Production Job to reflect the AI's strategic action
+        # We tag the project name with the AI's exact action string.
+        cursor.execute("""
+            UPDATE production_jobs 
+            SET project_name = ?, 
+                daily_downtime_penalty = 0 
+            WHERE job_id IN (
+                SELECT pj.job_id FROM production_jobs pj
+                JOIN job_requirements jr ON pj.job_id = jr.job_id
+                JOIN inventory_parts ip ON jr.part_id = ip.part_id
+                WHERE ip.sku = ?
+            )
+        """, (f"[{option_id} EXECUTED] {action_text}", target_sku))
+        
+        # 2. Dynamically update Inventory Cost if the AI defined a financial impact
+        if financial_impact:
+            try:
+                impact_value = float(financial_impact)
+                # If impact is negative (a cost), we increase the unit cost
+                if impact_value < 0:
+                    cost_increase = abs(impact_value)
+                    cursor.execute("""
+                        UPDATE inventory_parts 
+                        SET unit_cost = unit_cost + ?
+                        WHERE sku = ?
+                    """, (cost_increase, target_sku))
+            except (ValueError, TypeError):
+                pass
             
         conn.commit()
         
+        # Fetch the updated state to return to the UI
         cursor.execute("""
             SELECT pj.project_name, pj.daily_downtime_penalty 
             FROM production_jobs pj
@@ -358,8 +464,11 @@ async def execute_decision(payload: dict):
         
         return {
             "status": "success",
-            "message": "ERP Database Successfully Updated.",
-            "new_state": {"project": updated_row[0], "penalty": updated_row[1]}
+            "message": "ERP Database Successfully Updated with AI Decision.",
+            "new_state": {
+                "project": updated_row[0] if updated_row else "Unknown", 
+                "penalty": updated_row[1] if updated_row else 0
+            }
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
