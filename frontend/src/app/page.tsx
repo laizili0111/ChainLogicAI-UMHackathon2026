@@ -4,6 +4,7 @@ import { useState } from "react";
 import { 
   AlertTriangle, 
   TrendingDown, 
+  TrendingUp, 
   CheckCircle, 
   Database, 
   ArrowRight, 
@@ -86,8 +87,8 @@ function TradeOffCard({
         </h4>
         
         <div className="card-impact">
-          <div className={`impact-value ${option.financial_impact.net_financial_impact < 0 ? 'negative' : 'neutral'}`}>
-            <TrendingDown size={28} />
+          <div className={`impact-value ${option.financial_impact.net_financial_impact < 0 ? 'negative' : (option.financial_impact.net_financial_impact > 0 ? 'positive' : 'neutral')}`}>
+            {option.financial_impact.net_financial_impact > 0 ? <TrendingUp size={28} /> : <TrendingDown size={28} />}
             ${Math.abs(option.financial_impact.net_financial_impact).toLocaleString()}
           </div>
           <div className="impact-label">Net Financial Impact</div>
@@ -125,7 +126,9 @@ function TradeOffCard({
             <div className="comp-divider"></div>
             <div className="comp-row comp-total">
               <span className="comp-label">Net Result:</span>
-              <span className="comp-value">${option.financial_impact.net_financial_impact.toLocaleString()}</span>
+              <span className={`comp-value ${option.financial_impact.net_financial_impact > 0 ? 'text-positive' : (option.financial_impact.net_financial_impact < 0 ? 'text-negative' : '')}`}>
+                ${option.financial_impact.net_financial_impact.toLocaleString()}
+              </span>
             </div>
           </div>
         </div>

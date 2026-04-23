@@ -469,7 +469,8 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 800;
 }
 
-.impact-value.negative { color: #f87171; }
+.impact-value.negative, .text-negative { color: #f87171; }
+.impact-value.positive, .text-positive { color: var(--secondary); }
 .impact-value.neutral { color: var(--text-dark); }
 
 .impact-label {
