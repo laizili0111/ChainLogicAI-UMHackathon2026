@@ -33,14 +33,19 @@ chainlogic-ai/
 └── README.md               
 ```
 
-## 🔑 Environment Variables (API Keys)
+## 🔑 Environment Variables (API Configuration)
 
-To enable the live AI reasoning engine, you must provide a valid Z.AI API key locally. Never commit your real API key to GitHub.
+To enable the live AI reasoning engine, you must configure the Z.AI API settings in a local environment file. Never commit your real API key to GitHub.
 
-Navigate to the `backend/` folder on your local machine.
-Create a new file named exactly `.env`
-Add your API key inside the file like this:
-`Z_AI_API_KEY="insert_your_key_here"`
+1. Navigate to the `backend/` folder on your local machine.
+2. Create a new file named exactly `.env`.
+3. Add the following variables to the file:
+
+```env
+Z_AI_API_KEY="your_api_key_here"
+Z_AI_BASE_URL="https://api.ilmu.ai/v1/chat/completions"
+Z_AI_MODEL="ilmu-glm-5.1"
+```
 *(Note: The `.env` file is safely ignored by Git thanks to the `.gitignore` file).*
 
 ## 🚀 Quick Start Guide
