@@ -21,14 +21,15 @@ chainlogic-ai/
 ├── backend/                # Python FastAPI Server & SQLite Database
 │   ├── main.py             # Core API logic, routing, and DB execution
 │   ├── requirements.txt    # Python dependencies
+│   ├── .env                # API Credentials (Local only)
 │   └── .gitignore          # Prevents venv and local DBs from uploading
 │
 ├── frontend/               # Next.js React Dashboard
 │   ├── src/app/page.tsx    # Main UI and Client-side logic
 │   ├── src/app/InboxView.tsx # Corporate email inbox UI
-│   ├── src/app/globals.css # Core styling system
-│   ├── package.json        # Node dependencies
-│   └── tailwind.config.ts  # Config (unused, custom CSS favored)
+│   ├── src/app/layout.tsx  # Root layout and metadata
+│   ├── src/app/globals.css # Core styling system (Vanilla CSS)
+│   └── package.json        # Node dependencies
 │
 └── README.md               
 ```
