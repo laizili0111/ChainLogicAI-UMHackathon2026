@@ -12,7 +12,7 @@ This project is built using a decoupled, full-stack architecture:
 * **Frontend:** React / Next.js (Vanilla Custom CSS, Lucide Icons)
 * **Backend:** Python / FastAPI
 * **Database:** SQLite (Normalized schema auto-seeded on startup)
-* **AI Engine:** Z.AI GLM (via Agentic Workflow)
+* **AI Engine:** Hybrid Reasoning (Main: Z.AI GLM | Fallbacks: OpenRouter Nemotron/Gemma/GPT-OSS)
 
 ### Project Structure
 ```text
@@ -46,6 +46,7 @@ To enable the live AI reasoning engine, you must configure the Z.AI API settings
 Z_AI_API_KEY="your_api_key_here"
 Z_AI_BASE_URL="https://api.ilmu.ai/v1/chat/completions"
 Z_AI_MODEL="ilmu-glm-5.1"
+OPENROUTER_API_KEY="your_openrouter_key_here"
 ```
 *(Note: The `.env` file is safely ignored by Git thanks to the `.gitignore` file).*
 
