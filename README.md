@@ -1,5 +1,6 @@
 # ChainLogic AI ⛓️🧠
 
+Pitching video link: 
 https://drive.google.com/file/d/1cc6xq_waMGesl4KKTQ-dfQammIURbtdp/view?usp=sharing
 
 **An Agentic Supply Chain Decision Engine for Automotive SMEs.**
