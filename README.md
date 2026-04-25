@@ -14,7 +14,7 @@ This project is built using a decoupled, full-stack architecture:
 * **Frontend:** React / Next.js (Vanilla Custom CSS, Lucide Icons)
 * **Backend:** Python / FastAPI
 * **Database:** SQLite (Normalized schema auto-seeded on startup)
-* **AI Engine:** Z.AI GLM (via Agentic Workflow)
+* **AI Engine:** Hybrid Reasoning (Main: Z.AI GLM | Fallbacks: OpenRouter Nemotron/Gemma/GPT-OSS)
 
 ### Project Structure
 ```text
@@ -23,14 +23,15 @@ chainlogic-ai/
 ├── backend/                # Python FastAPI Server & SQLite Database
 │   ├── main.py             # Core API logic, routing, and DB execution
 │   ├── requirements.txt    # Python dependencies
+│   ├── .env                # API Credentials (Local only)
 │   └── .gitignore          # Prevents venv and local DBs from uploading
 │
 ├── frontend/               # Next.js React Dashboard
 │   ├── src/app/page.tsx    # Main UI and Client-side logic
 │   ├── src/app/InboxView.tsx # Corporate email inbox UI
-│   ├── src/app/globals.css # Core styling system
-│   ├── package.json        # Node dependencies
-│   └── tailwind.config.ts  # Config (unused, custom CSS favored)
+│   ├── src/app/layout.tsx  # Root layout and metadata
+│   ├── src/app/globals.css # Core styling system (Vanilla CSS)
+│   └── package.json        # Node dependencies
 │
 └── README.md               
 ```
@@ -47,6 +48,7 @@ To enable the live AI reasoning engine, you must configure the Z.AI API settings
 Z_AI_API_KEY="your_api_key_here"
 Z_AI_BASE_URL="https://api.ilmu.ai/v1/chat/completions"
 Z_AI_MODEL="ilmu-glm-5.1"
+OPENROUTER_API_KEY="your_openrouter_key_here"
 ```
 *(Note: The `.env` file is safely ignored by Git thanks to the `.gitignore` file).*
 

@@ -152,6 +152,34 @@ Z_AI_API_KEY = os.getenv("Z_AI_API_KEY")
 Z_AI_BASE_URL = os.getenv("Z_AI_BASE_URL", "https://api.ilmu.ai/v1/chat/completions")
 Z_AI_MODEL = os.getenv("Z_AI_MODEL", "ilmu-glm-5.1")
 
+# --- OPENROUTER FALLBACK CONFIGURATION ---
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+FALLBACK_MODELS = [
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "openai/gpt-oss-120b:free"
+]
+
+def call_openrouter_ai(system_prompt: str, user_prompt: str, model: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000", # Required by OpenRouter
+        "X-Title": "ChainLogic AI"
+    }
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": user_prompt})
+    
+    data = {"model": model, "messages": messages}
+    req = urllib.request.Request(OPENROUTER_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
+    with urllib.request.urlopen(req) as response:
+        result = json.loads(response.read().decode("utf-8"))
+        return result["choices"][0]["message"]["content"]
+
+
 def call_z_ai(system_prompt: str, user_prompt: str) -> str:
     headers = {
         "Authorization": f"Bearer {Z_AI_API_KEY}",
@@ -336,43 +364,58 @@ async def analyze_crisis(trigger_data: dict):
     try:
         ai_json_string = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
     except Exception as e:
-        # Fallback to hardcoded mock if API fails (e.g. model subscription error)
-        print("Falling back to hardcoded mock due to API error:", e)
-        ai_json_string = """
-        {
-            "crisis_analysis": {
-                "status": "CRITICAL",
-                "affected_component": { "sku": "AE-V8-SENS", "name": "High-Fidelity Acoustic Emission Sensor" },
-                "baseline_impact": "Will be dynamically updated below."
-            },
-            "trade_off_options": [
-                {
-                    "option_id": "A",
-                    "action": "Air Freight via Secondary EU Supplier",
-                    "justification": "Fastest recovery time, but incurs a severe premium shipping cost that impacts profit margins.",
-                    "financial_impact": { "net_financial_impact": -8500 },
-                    "computation_breakdown": {
-                        "formula": "Net Impact = -(Expedite Fee + Sourcing Premium)",
-                        "math": "-$5,000 (Air) - $3,500 (Premium) = -$8,500"
-                    }
+        print(f"Primary Z.AI failed: {e}. Attempting hybrid fallback reasoning...")
+        ai_json_string = None
+        
+        # Try OpenRouter Fallbacks
+        for model in FALLBACK_MODELS:
+            try:
+                print(f"Trying fallback model: {model}")
+                ai_json_string = call_openrouter_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, model)
+                if ai_json_string:
+                    print(f"Fallback successful with {model}")
+                    break
+            except Exception as fe:
+                print(f"Fallback {model} failed: {fe}")
+        
+        if not ai_json_string:
+            print("All AI models failed. Falling back to hardcoded mock.")
+            ai_json_string = """
+            {
+                "crisis_analysis": {
+                    "status": "CRITICAL",
+                    "affected_component": { "sku": "AE-V8-SENS", "name": "High-Fidelity Acoustic Emission Sensor" },
+                    "baseline_impact": "Will be dynamically updated below."
                 },
-                {
-                    "option_id": "C",
-                    "action": "Reschedule Rig B to V6 Engine Variant Testing",
-                    "justification": "Swapping the testing schedule entirely avoids the downtime penalty and requires zero additional capital.",
-                    "financial_impact": { "net_financial_impact": 0 },
-                    "computation_breakdown": {
-                        "formula": "Penalty Avoidance = Daily Penalty × Days Delay",
-                        "math": "$12,500 × 0 = $0 (Schedule Shift)"
+                "trade_off_options": [
+                    {
+                        "option_id": "A",
+                        "action": "Air Freight via Secondary EU Supplier",
+                        "justification": "Fastest recovery time, but incurs a severe premium shipping cost that impacts profit margins.",
+                        "financial_impact": { "net_financial_impact": -8500 },
+                        "computation_breakdown": {
+                            "formula": "Net Impact = -(Expedite Fee + Sourcing Premium)",
+                            "math": "-$5,000 (Air) - $3,500 (Premium) = -$8,500"
+                        }
+                    },
+                    {
+                        "option_id": "C",
+                        "action": "Reschedule Rig B to V6 Engine Variant Testing",
+                        "justification": "Swapping the testing schedule entirely avoids the downtime penalty and requires zero additional capital.",
+                        "financial_impact": { "net_financial_impact": 0 },
+                        "computation_breakdown": {
+                            "formula": "Penalty Avoidance = Daily Penalty × Days Delay",
+                            "math": "$12,500 × 0 = $0 (Schedule Shift)"
+                        }
                     }
+                ],
+                "glm_recommendation": {
+                    "primary_choice": "C",
+                    "explainability": "Option C mitigates the daily penalty and avoids an expedite fee."
                 }
-            ],
-            "glm_recommendation": {
-                "primary_choice": "C",
-                "explainability": "Option C mitigates the daily penalty and avoids an expedite fee."
             }
-        }
-        """
+            """
+
 
     try:
         # 3. Clean up formatting and convert string to Python dictionary
