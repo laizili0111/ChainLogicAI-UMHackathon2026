@@ -1,5 +1,7 @@
 # ChainLogic AI ⛓️🧠
 
+https://drive.google.com/file/d/1cc6xq_waMGesl4KKTQ-dfQammIURbtdp/view?usp=sharing
+
 **An Agentic Supply Chain Decision Engine for Automotive SMEs.**
 
 ChainLogic AI is a closed-loop intelligence system designed to ingest unstructured supply chain disruptions (like supplier emails), query live ERP databases (SQLite), calculate financial trade-offs, and execute the mathematically optimal recovery plan directly back into the master database to prevent the Bullwhip Effect. By transforming logistical chaos into calculated financial strategy, it empowers automotive SMEs to protect tight profit margins, eliminate ruinous supply chain downtime penalties and turn global volatility into a competitive economic advantage.
