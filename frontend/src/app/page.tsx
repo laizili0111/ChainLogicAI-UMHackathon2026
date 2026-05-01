@@ -27,9 +27,9 @@ interface ContextualData {
 interface Component { sku: string; name: string; }
 interface CrisisAnalysis { status: string; affected_component: Component; baseline_impact: string; }
 interface FinancialImpact { net_financial_impact: number; }
-interface ComputationBreakdown { formula: string; math: string; }
+interface ComputationBreakdown { formula: string; math: string; source_attribution?: string; }
 interface TradeOffOption { option_id: string; action: string; justification: string; financial_impact: FinancialImpact; computation_breakdown?: ComputationBreakdown; }
-interface GlmRecommendation { primary_choice: string; explainability: string; }
+interface GlmRecommendation { primary_choice: string; explainability: string; confidence_score?: number; }
 interface InsightData { 
   contextual_data_retrieved: ContextualData; 
   crisis_analysis: CrisisAnalysis; 
@@ -59,6 +59,7 @@ function TradeOffCard({
       return {
         formula: option.computation_breakdown.formula,
         math: option.computation_breakdown.math,
+        source_attribution: option.computation_breakdown.source_attribution || "ERP Extrapolation",
         justification: option.justification
       };
     }
@@ -67,6 +68,7 @@ function TradeOffCard({
     return { 
       formula: "Dynamic breakdown unavailable", 
       math: `Net Impact: $${option.financial_impact.net_financial_impact.toLocaleString()}`, 
+      source_attribution: "System Fallback",
       justification: option.justification 
     };
   };
@@ -118,6 +120,10 @@ function TradeOffCard({
             <div className="comp-row">
               <span className="comp-label">GLM Breakdown:</span>
               <span className="comp-value">{details.math}</span>
+            </div>
+            <div className="comp-row">
+              <span className="comp-label">Attribution:</span>
+              <span className="comp-value" style={{ color: '#60a5fa' }}>{details.source_attribution}</span>
             </div>
             <div className="comp-row">
               <span className="comp-label">ERP Context:</span>
@@ -322,7 +328,14 @@ export default function App() {
 
               {insight.trade_off_options && insight.trade_off_options.length > 0 && (
                 <>
-                  <h3 className="section-title">AI Trade-off Analysis</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 className="section-title">AI Trade-off Analysis</h3>
+                    {insight.glm_recommendation.confidence_score && (
+                      <div className="status-badge" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.4)' }}>
+                        Confidence: {(insight.glm_recommendation.confidence_score * 100).toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
                   <div className="cards-grid">
                     {insight.trade_off_options.map((option: TradeOffOption) => (
                       <TradeOffCard 
@@ -339,8 +352,17 @@ export default function App() {
               )}
               {insight.crisis_analysis.status === "SAFE" && (
                 <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '1rem' }}>
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>Z.AI System Recommendation</h3>
-                  <p style={{ margin: 0, opacity: 0.9 }}>{insight.glm_recommendation.explainability}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>Z.AI System Recommendation</h3>
+                      <p style={{ margin: 0, opacity: 0.9 }}>{insight.glm_recommendation.explainability}</p>
+                    </div>
+                    {insight.glm_recommendation.confidence_score && (
+                      <div className="status-badge" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#86efac', border: '1px solid rgba(34, 197, 94, 0.4)' }}>
+                        Confidence: {(insight.glm_recommendation.confidence_score * 100).toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

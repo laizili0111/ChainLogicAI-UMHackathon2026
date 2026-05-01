@@ -29,13 +29,15 @@ Your JSON output must perfectly match this exact schema:
       "financial_impact": { "net_financial_impact": number (Use negative numbers for costs) },
       "computation_breakdown": {
         "formula": "string (e.g., 'Net Impact = -(Expedite Fee + Sourcing Premium)')",
-        "math": "string (Show the math breakdown, e.g., '-$5,000 - $3,500 = -$8,500')"
+        "math": "string (Show the math breakdown, e.g., '-$5,000 - $3,500 = -$8,500')",
+        "source_attribution": "string (Explicitly state where the math components came from, e.g., 'ERP Database - SQLite' or 'Extrapolated Estimate')"
       }
     }
   ],
   "glm_recommendation": {
     "primary_choice": "string (A, B, or C)",
-    "explainability": "string (Explain WHY this is the best mathematical and strategic choice. Use specific dollar amounts and mention avoiding the bullwhip effect if applicable.)"
+    "explainability": "string (Explain WHY this is the best mathematical and strategic choice. Use specific dollar amounts and mention avoiding the bullwhip effect if applicable.)",
+    "confidence_score": float (A value between 0.0 and 1.0 indicating how confident the AI is in this recommendation based on available data)
   }
 }
 """
@@ -54,7 +56,7 @@ def call_openrouter_ai(system_prompt: str, user_prompt: str, model: str) -> str:
     
     data = {"model": model, "messages": messages}
     req = urllib.request.Request(settings.OPENROUTER_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
-    with urllib.request.urlopen(req) as response:
+    with urllib.request.urlopen(req, timeout=5.0) as response:
         result = json.loads(response.read().decode("utf-8"))
         return result["choices"][0]["message"]["content"]
 
@@ -75,7 +77,7 @@ def call_z_ai(system_prompt: str, user_prompt: str) -> str:
     
     req = urllib.request.Request(settings.Z_AI_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=5.0) as response:
             result = json.loads(response.read().decode("utf-8"))
             return result["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:

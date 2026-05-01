@@ -5,3 +5,7 @@ uvicorn[standard]
 # --- Environment Variables (For your API Key later) ---
 python-dotenv
 pydantic
+
+# --- Testing ---
+pytest
+httpx

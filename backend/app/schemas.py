@@ -37,6 +37,7 @@ class FinancialImpact(BaseModel):
 class ComputationBreakdown(BaseModel):
     formula: str
     math: str
+    source_attribution: str
 
 class TradeOffOption(BaseModel):
     option_id: str
@@ -48,6 +49,7 @@ class TradeOffOption(BaseModel):
 class GlmRecommendation(BaseModel):
     primary_choice: str
     explainability: str
+    confidence_score: float
 
 class AIAnalysisResponse(BaseModel):
     crisis_analysis: CrisisAnalysis

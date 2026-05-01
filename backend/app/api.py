@@ -37,7 +37,8 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
             "trade_off_options": [],
             "glm_recommendation": {
                 "primary_choice": "N/A",
-                "explainability": "The system has verified that there is no imminent production risk requiring action."
+                "explainability": "The system has verified that there is no imminent production risk requiring action.",
+                "confidence_score": 1.0
             },
             "contextual_data_retrieved": live_ui_data
         }
@@ -77,7 +78,8 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
                         "financial_impact": { "net_financial_impact": -8500 },
                         "computation_breakdown": {
                             "formula": "Net Impact = -(Expedite Fee + Sourcing Premium)",
-                            "math": "-$5,000 (Air) - $3,500 (Premium) = -$8,500"
+                            "math": "-$5,000 (Air) - $3,500 (Premium) = -$8,500",
+                            "source_attribution": "Logistics Estimate / ERP Extrapolation"
                         }
                     },
                     {
@@ -87,13 +89,15 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
                         "financial_impact": { "net_financial_impact": 0 },
                         "computation_breakdown": {
                             "formula": "Penalty Avoidance = Daily Penalty × Days Delay",
-                            "math": "$12,500 × 0 = $0 (Schedule Shift)"
+                            "math": "$12,500 × 0 = $0 (Schedule Shift)",
+                            "source_attribution": "ERP Database - SQLite"
                         }
                     }
                 ],
                 "glm_recommendation": {
                     "primary_choice": "C",
-                    "explainability": "Option C mitigates the daily penalty and avoids an expedite fee."
+                    "explainability": "Option C mitigates the daily penalty and avoids an expedite fee.",
+                    "confidence_score": 0.95
                 }
             }
             """
@@ -119,7 +123,7 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
         
         try:
             validated_response = AIAnalysisResponse(**decision_data)
-            return validated_response.dict()
+            return validated_response.model_dump()
         except ValidationError as ve:
             print(f"Pydantic Validation Error: {ve}")
             return {"error": "AI returned a response that did not match the strict schema requirements.", "details": str(ve)}
