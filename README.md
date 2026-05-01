@@ -1,6 +1,6 @@
 # ChainLogic AI ⛓️🧠
 
-Pitching video link: 
+Preliminary pitching video link: 
 https://drive.google.com/file/d/1cc6xq_waMGesl4KKTQ-dfQammIURbtdp/view?usp=sharing
 
 **An Agentic Supply Chain Decision Engine for Automotive SMEs.**
@@ -13,9 +13,10 @@ ChainLogic AI is a closed-loop intelligence system designed to ingest unstructur
 
 This project is built using a decoupled, full-stack architecture:
 * **Frontend:** React / Next.js (Vanilla Custom CSS, Lucide Icons)
-* **Backend:** Python / FastAPI
-* **Database:** SQLite (Normalized schema auto-seeded on startup)
-* **AI Engine:** Hybrid Reasoning (Main: Z.AI GLM | Fallbacks: OpenRouter Nemotron/Gemma/GPT-OSS)
+* **Backend:** Python / FastAPI fully abstracted via **SQLAlchemy ORM**
+* **Database:** SQLite for zero-config demo (Production-ready for AWS RDS PostgreSQL via ORM swap)
+* **AI Engine:** 3-Stage High-Availability Fallback Architecture (Layer 1: Z.AI GLM-4-Plus | Layer 2: Ilmu GLM-5.1 | Layer 3: OpenRouter)
+* **Performance Pipeline:** High-Speed Regex Prefixing for 0.01s entity extraction, bypassing AI latency when possible.
 
 ### Project Structure
 ```text

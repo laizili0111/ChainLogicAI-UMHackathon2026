@@ -81,9 +81,10 @@ def call_z_ai_main(system_prompt: str, user_prompt: str) -> str:
             result = json.loads(response.read().decode("utf-8"))
             return result["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:
-        err_body = e.read().decode('utf-8')
-        print(f"Main Z.AI API Error ({e.code}): {err_body}")
-        raise Exception(f"Main Z.AI API Error: {err_body}")
+        err_body = e.read().decode('utf-8', errors='ignore')
+        safe_err = err_body.encode('ascii', 'ignore').decode('ascii')
+        print(f"Main Z.AI API Error ({e.code}): {safe_err}")
+        raise Exception(f"Main Z.AI API Error: {safe_err}")
 
 def call_z_ai(system_prompt: str, user_prompt: str) -> str:
     headers = {
@@ -106,9 +107,10 @@ def call_z_ai(system_prompt: str, user_prompt: str) -> str:
             result = json.loads(response.read().decode("utf-8"))
             return result["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:
-        err_body = e.read().decode('utf-8')
-        print(f"Z.AI API Error ({e.code}): {err_body}")
-        raise Exception(f"Z.AI API Error: {err_body}")
+        err_body = e.read().decode('utf-8', errors='ignore')
+        safe_err = err_body.encode('ascii', 'ignore').decode('ascii')
+        print(f"Z.AI API Error ({e.code}): {safe_err}")
+        raise Exception(f"Z.AI API Error: {safe_err}")
 
 def extract_sku_from_trigger(email_text: str) -> str:
     # 1. High-Speed Regex Pass (Zero Latency)

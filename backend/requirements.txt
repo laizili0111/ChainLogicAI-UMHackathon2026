@@ -9,3 +9,6 @@ pydantic
 # --- Testing ---
 pytest
 httpx
+
+# --- Database ORM ---
+sqlalchemy

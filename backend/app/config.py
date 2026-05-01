@@ -22,7 +22,8 @@ class Settings:
         "google/gemma-4-26b-a4b-it:free",
         "openai/gpt-oss-120b:free"
     ]
-    
+    # Database Connection
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chainlogic_erp.db")
     DB_FILE = 'chainlogic_erp.db'
 
 settings = Settings()

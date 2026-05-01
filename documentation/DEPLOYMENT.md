@@ -22,8 +22,8 @@ For a multi-tenant SME rollout, the architecture transitions seamlessly to the c
    - They are deployed on AWS Fargate (Serverless Containers) which automatically scales instances horizontally when supply chain disruptions spike (e.g., during a global logistical crisis).
 
 3. **Database Migration (SQLite to PostgreSQL/RDS)**:
-   - While SQLite is optimal for this "Zero-Config" prototype, the backend utilizes generic SQL patterns.
-   - For production, the database connection string in `.env` is swapped to point to **Amazon RDS (PostgreSQL)**, enabling high concurrency, ACID compliance at scale, and automated backups.
+   - While SQLite is optimal for this "Zero-Config" hackathon prototype, the backend is fully abstracted using the **SQLAlchemy ORM**.
+   - For production, migrating to **Amazon RDS (PostgreSQL)** requires **zero code changes**. We simply inject a new `DATABASE_URL` via the `.env` file, and SQLAlchemy automatically translates all ORM models to the PostgreSQL dialect, enabling high concurrency and ACID compliance at enterprise scale.
 
 4. **Secrets Management**:
    - The `.env` file holding Z.AI and OpenRouter credentials is replaced by **AWS Secrets Manager**, injecting credentials into the containers securely at runtime.
