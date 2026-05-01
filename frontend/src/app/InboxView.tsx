@@ -29,25 +29,25 @@ const MOCK_EMAILS: Email[] = [
   },
   {
     id: "2",
-    sender: "Panasonic Energy",
-    senderEmail: "orders@panasonic-energy.jp",
-    subject: "Shipment Confirmation: BATT-CELL-4680",
-    snippet: "Your order for 4,000 Lithium-Ion cells has been dispatched and is currently in transit...",
-    body: "Your order #88291 has been shipped via sea freight. Expected arrival at the Port of Long Beach is May 15th.",
+    sender: "Texas Instruments",
+    senderEmail: "supply@ti.com",
+    subject: "SHORTAGE WARNING: BATT-CELL-4680 Delay",
+    snippet: "Due to raw material shortages, all future shipments of BATT-CELL-4680 will be delayed. We recommend...",
+    body: "Dear Procurement Team,\n\nDue to unprecedented raw material shortages in our supply chain, we are forecasting a 2-month delay on all future shipments of the BATT-CELL-4680 (Lithium Battery) modules.\n\nTo ensure your production lines remain active through Q4, we strongly recommend you immediately submit a bulk order for 50,000 extra units to secure your allocation before global inventory is completely exhausted.\n\nPlease confirm if you want to proceed with this massive pre-order to avoid downtime.\n\nBest,\nTI Supply Team",
     date: "Yesterday",
-    unread: false,
-    avatar: "P"
+    unread: true,
+    avatar: "T"
   },
   {
     id: "3",
-    sender: "Brembo OEM",
-    senderEmail: "sales@brembo.it",
-    subject: "Updated Pricing Catalog - Q3 2026",
-    snippet: "Please find attached the updated unit costs for our ceramic brake pad sets and rotor assemblies...",
-    body: "Attached is our new price list. Note that volume discounts for the BRK-PAD-99 series have been improved.",
+    sender: "Global Logistics",
+    senderEmail: "alerts@globallogistics.com",
+    subject: "PORT STRIKE: MCU-TC397-EVO Shipment Held",
+    snippet: "A minor port strike is delaying the MCU-TC397-EVO shipment by 4 days. Please consider over-ordering...",
+    body: "To Whom It May Concern,\n\nPlease be advised that shipment #88492 containing part MCU-TC397-EVO is currently delayed at the port due to a labor strike. Expected delay: 4 days.\n\nMany of our clients are doubling or tripling their orders (requesting 5,000+ units) to build buffer stock just in case the strike extends for months.\n\nLet us know if you want to drastically increase your order volume for MCU-TC397-EVO.\n\nRegards,\nGlobal Logistics",
     date: "Apr 20",
-    unread: false,
-    avatar: "B"
+    unread: true,
+    avatar: "G"
   },
   {
     id: "4",

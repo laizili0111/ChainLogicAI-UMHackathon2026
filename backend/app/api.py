@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pydantic import ValidationError
 from .schemas import AnalyzeCrisisRequest, AIAnalysisResponse, ExecuteDecisionRequest, ExecuteDecisionResponse
 from .db import fetch_erp_context, fetch_erp_data_dict, execute_ai_decision
-from .ai import extract_sku_from_trigger, call_z_ai, call_openrouter_ai, CHAINLOGIC_SYSTEM_PROMPT
+from .ai import extract_sku_from_trigger, call_z_ai_main, call_z_ai, call_openrouter_ai, CHAINLOGIC_SYSTEM_PROMPT
 from .config import settings
 
 router = APIRouter()
@@ -46,20 +46,24 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
     user_prompt = f"UNSTRUCTURED TRIGGER: {incoming_email}\n\nSTRUCTURED ERP CONTEXT:\n{erp_context_string}"
     
     try:
-        ai_json_string = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
+        ai_json_string = call_z_ai_main(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
     except Exception as e:
-        print(f"Primary Z.AI failed: {e}. Attempting hybrid fallback reasoning...")
-        ai_json_string = None
-        
-        for model in settings.FALLBACK_MODELS:
-            try:
-                print(f"Trying fallback model: {model}")
-                ai_json_string = call_openrouter_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, model)
-                if ai_json_string:
-                    print(f"Fallback successful with {model}")
-                    break
-            except Exception as fe:
-                print(f"Fallback {model} failed: {fe}")
+        print(f"Primary Z.AI (Main) failed: {e}. Attempting secondary Z.AI (Ilmu)...")
+        try:
+            ai_json_string = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
+        except Exception as e2:
+            print(f"Secondary Z.AI failed: {e2}. Attempting OpenRouter fallback...")
+            ai_json_string = None
+            
+            for model in settings.FALLBACK_MODELS:
+                try:
+                    print(f"Trying fallback model: {model}")
+                    ai_json_string = call_openrouter_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, model)
+                    if ai_json_string:
+                        print(f"Fallback successful with {model}")
+                        break
+                except Exception as fe:
+                    print(f"Fallback {model} failed: {fe}")
         
         if not ai_json_string:
             print("All AI models failed. Falling back to hardcoded mock.")
