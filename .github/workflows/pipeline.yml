@@ -64,4 +64,4 @@ jobs:
 
       - name: Verify Docker Compose Build
         # This proves to the judges that the containerization works perfectly.
-        run: docker-compose build
+        run: docker compose build
