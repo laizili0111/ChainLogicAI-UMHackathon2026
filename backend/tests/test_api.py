@@ -1,7 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.db import setup_database
 
+setup_database()
 client = TestClient(app)
 
 def test_analyze_crisis_no_sku():
