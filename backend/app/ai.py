@@ -17,7 +17,7 @@ CRITICAL INSTRUCTION: You must respond ONLY with raw, valid JSON. Do not include
 Your JSON output must perfectly match this exact schema:
 {
   "crisis_analysis": {
-    "status": "CRITICAL",
+    "status": "string (CRITICAL, SAFE, or MONITORING)",
     "affected_component": { "sku": "string", "name": "string" },
     "baseline_impact": "string (Calculate the days until stockout and total financial penalty)"
   },
