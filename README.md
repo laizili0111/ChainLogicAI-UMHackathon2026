@@ -18,8 +18,15 @@ This project is built using a decoupled, full-stack architecture:
 ```text
 chainlogic-ai/
 │
-├── backend/                # Python FastAPI Server & SQLite Database
-│   ├── main.py             # Core API logic, routing, and DB execution
+├── backend/                # Modularized Python FastAPI Server
+│   ├── app/                # Application modules
+│   │   ├── main.py         # Entry point
+│   │   ├── api.py          # API Routes
+│   │   ├── ai.py           # AI Engine
+│   │   ├── db.py           # Database Operations
+│   │   ├── schemas.py      # Pydantic Data Models
+│   │   └── config.py       # Configuration
+│   ├── run.py              # Uvicorn execution script
 │   ├── requirements.txt    # Python dependencies
 │   ├── .env                # API Credentials (Local only)
 │   └── .gitignore          # Prevents venv and local DBs from uploading
@@ -75,7 +82,7 @@ Mac/Linux: `source venv/bin/activate`
 `pip install -r requirements.txt`
 
 5. Start the FastAPI server:
-`python -m uvicorn main:app --reload`
+`python run.py` (or `python -m uvicorn app.main:app --reload`)
 *(Note: On the first run, the server will automatically generate and seed the normalized `chainlogic_erp.db` SQLite database).*
 
 ### Terminal 2: Start the React Dashboard
