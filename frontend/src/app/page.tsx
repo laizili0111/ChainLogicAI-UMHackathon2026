@@ -114,25 +114,25 @@ function TradeOffCard({
           <div className="computation-grid">
             <div className="comp-row">
               <span className="comp-label">Base Logic:</span>
-              <span className="comp-value">{details.formula}</span>
+              <span className="comp-value math-font">{details.formula}</span>
             </div>
             <div className="comp-divider"></div>
             <div className="comp-row">
               <span className="comp-label">GLM Breakdown:</span>
-              <span className="comp-value">{details.math}</span>
+              <span className="comp-value math-font">{details.math}</span>
             </div>
             <div className="comp-row">
               <span className="comp-label">Attribution:</span>
-              <span className="comp-value" style={{ color: '#60a5fa' }}>{details.source_attribution}</span>
+              <span className="comp-value" style={{ color: '#93c5fd', fontWeight: 600 }}>{details.source_attribution}</span>
             </div>
             <div className="comp-row">
               <span className="comp-label">ERP Context:</span>
-              <span className="comp-value">{contextualData.sku} Stock: {contextualData.current_inventory}</span>
+              <span className="comp-value">{contextualData.sku} (Stock: {contextualData.current_inventory})</span>
             </div>
             <div className="comp-divider"></div>
             <div className="comp-row comp-total">
               <span className="comp-label">Net Result:</span>
-              <span className={`comp-value ${option.financial_impact.net_financial_impact > 0 ? 'text-positive' : (option.financial_impact.net_financial_impact < 0 ? 'text-negative' : '')}`}>
+              <span className={`comp-value ${option.financial_impact.net_financial_impact > 0 ? 'text-positive' : (option.financial_impact.net_financial_impact < 0 ? 'text-negative' : '')}`} style={{ fontSize: '1.05rem', fontWeight: 700 }}>
                 ${option.financial_impact.net_financial_impact.toLocaleString()}
               </span>
             </div>
