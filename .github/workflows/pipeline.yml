@@ -30,7 +30,7 @@ jobs:
         working-directory: ./backend
         # Because we don't supply real API keys in CI, this ensures our 
         # Hybrid Fallback Logic (OpenRouter/Mock) is robust and passes automatically.
-        run: pytest tests/
+        run: python -m pytest tests/
 
   build-frontend:
     name: Frontend Build & Verification
@@ -48,7 +48,7 @@ jobs:
 
       - name: Install Node Dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
       - name: Build Next.js Dashboard (Validates TypeScript/Linting)
         working-directory: ./frontend
