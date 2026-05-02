@@ -7,7 +7,7 @@ https://drive.google.com/file/d/1cc6xq_waMGesl4KKTQ-dfQammIURbtdp/view?usp=shari
 * [Business Proposal (PDF)](./finals_documentation/FINAL_UMHackathon2026%20Business%20Proposal%20(Final%20Round).pdf)
 * [Deployment Plan (PDF)](./finals_documentation/FINAL_UMHackathon2026%20Deployment%20Plan%20(Final%20Round).pdf)
 * [Quality Assurance Testing Document (QATD) (PDF)](./finals_documentation/FINAL_UMHackathon2026%20Refined%20Testing%20Analysis%20Documentation%20(Final%20Round).pdf)
-* [Final Round Pitch Deck (PDF)](./finals_documentation/KitKat Thieves Final Round Pitch Deck - UMHackathon 2026 .pdf)
+* [Final Round Pitch Deck (PDF)](./finals_documentation/KitKat%20Thieves%20Final%20Round%20Pitch%20Deck%20-%20UMHackathon%202026.pdf)
 
 **An Agentic Supply Chain Decision Engine for Automotive SMEs.**
 
