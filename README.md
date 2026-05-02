@@ -3,6 +3,11 @@
 Preliminary pitching video link: 
 https://drive.google.com/file/d/1cc6xq_waMGesl4KKTQ-dfQammIURbtdp/view?usp=sharing
 
+### 📚 Final Submission Documents
+* [Business Proposal (PDF)](./finals_documentation/FINAL_UMHackathon2026%20Business%20Proposal%20(Final%20Round).pdf)
+* [Deployment Plan (PDF)](./finals_documentation/FINAL_UMHackathon2026%20Deployment%20Plan%20(Final%20Round).pdf)
+* [Quality Assurance Testing Document (QATD) (PDF)](./finals_documentation/FINAL_UMHackathon2026%20Refined%20Testing%20Analysis%20Documentation%20(Final%20Round).pdf)
+
 **An Agentic Supply Chain Decision Engine for Automotive SMEs.**
 
 ChainLogic AI is a closed-loop intelligence system designed to ingest unstructured supply chain disruptions (like supplier emails), query live ERP databases (SQLite), calculate financial trade-offs, and execute the mathematically optimal recovery plan directly back into the master database to prevent the Bullwhip Effect. By transforming logistical chaos into calculated financial strategy, it empowers automotive SMEs to protect tight profit margins, eliminate ruinous supply chain downtime penalties and turn global volatility into a competitive economic advantage.
