@@ -47,14 +47,17 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
     
     try:
         ai_json_string, total_tokens = call_z_ai_main(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
+        model_used_name = "Zhipu GLM-5.1"
     except Exception as e:
         print(f"Primary Z.AI (Main) failed: {e}. Attempting secondary Z.AI (Ilmu)...")
         try:
             ai_json_string, total_tokens = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
+            model_used_name = "Ilmu GLM-5.1"
         except Exception as e2:
             print(f"Secondary Z.AI failed: {e2}. Attempting OpenRouter fallback...")
             ai_json_string = None
             total_tokens = 2000
+            model_used_name = "Unknown"
             
             for model in settings.FALLBACK_MODELS:
                 try:
@@ -62,6 +65,7 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
                     ai_json_string = call_openrouter_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, model)
                     if ai_json_string:
                         print(f"Fallback successful with {model}")
+                        model_used_name = f"OpenRouter ({model})"
                         break
                 except Exception as fe:
                     print(f"Fallback {model} failed: {fe}")
@@ -118,6 +122,11 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
         ai_json_string = ai_json_string.strip()
         
         decision_data = json.loads(ai_json_string)
+        
+        # Inject the model used for UI transparency
+        if "glm_recommendation" in decision_data:
+            decision_data["glm_recommendation"]["model_used"] = model_used_name
+            
         live_ui_data["tokens_used"] = total_tokens
         decision_data["contextual_data_retrieved"] = live_ui_data
         
