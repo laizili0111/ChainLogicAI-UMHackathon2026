@@ -241,6 +241,7 @@ export default function App() {
   const [emailText, setEmailText] = useState("");
   const [executedOption, setExecutedOption] = useState<string | null>(null);
   const [analysisTimeMs, setAnalysisTimeMs] = useState<number | null>(null);
+  const [toastError, setToastError] = useState<string | null>(null);
 
   const handleStartAnalysis = (email: Email) => {
     setActiveEmail(email);
@@ -255,6 +256,7 @@ export default function App() {
     setInsight(null);
     setExecutedOption(null);
     setAnalysisTimeMs(null);
+    setToastError(null); // Clear previous errors
     const startTime = performance.now();
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -263,10 +265,19 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trigger_text: text }),
       });
-      const data: InsightData = await response.json();
-      setInsight(data);
+      
+      const data = await response.json();
+      
+      // Handle known backend errors gracefully
+      if (!response.ok || data.error || data.detail) {
+        setToastError(data.error || data.detail || "Analysis failed. Please check the email format.");
+        return;
+      }
+
+      setInsight(data as InsightData);
     } catch (error) {
       console.error("Failed to connect to backend:", error);
+      setToastError("Failed to connect to backend. Is the server running?");
     } finally {
       const endTime = performance.now();
       setAnalysisTimeMs(endTime - startTime);
@@ -293,6 +304,25 @@ export default function App() {
 
   return (
     <main className="app-container">
+      {/* TOAST NOTIFICATION */}
+      {toastError && (
+        <div className="toast-error" style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 1000,
+          background: 'rgba(239, 68, 68, 0.95)', color: 'white',
+          padding: '1rem 1.5rem', borderRadius: '8px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2)', display: 'flex', 
+          alignItems: 'center', gap: '0.75rem', borderLeft: '4px solid #b91c1c',
+          animation: 'fadeInDown 0.3s ease-out'
+        }}>
+          <AlertTriangle size={20} />
+          <div>
+            <div style={{fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em'}}>Analysis Error</div>
+            <div style={{fontSize: '0.95rem', opacity: 0.9}}>{toastError}</div>
+          </div>
+          <button onClick={() => setToastError(null)} style={{background: 'none', border: 'none', color: 'white', marginLeft: '1rem', cursor: 'pointer', opacity: 0.7}}>✕</button>
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>

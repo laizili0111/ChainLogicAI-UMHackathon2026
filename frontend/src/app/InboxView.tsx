@@ -70,6 +70,17 @@ const MOCK_EMAILS: Email[] = [
     date: "Apr 18",
     unread: true,
     avatar: "P"
+  },
+  {
+    id: "6",
+    sender: "AutoParts Weekly",
+    senderEmail: "newsletter@autoparts-weekly.com",
+    subject: "Industry Insights: Q3 Manufacturing Trends",
+    snippet: "Read our latest report on how AI is reshaping the automotive supply chain...",
+    body: "Welcome to AutoParts Weekly!\n\nIn this week's edition, we explore how major automotive manufacturers are adopting AI-driven logistics to streamline their supply chains. \n\nAlso, please be informed that our main corporate office will be closed next Friday for a public holiday. Our support channels will remain open, but response times may be slightly delayed.\n\nThank you for being a valued subscriber.",
+    date: "Apr 17",
+    unread: false,
+    avatar: "A"
   }
 ];
 
