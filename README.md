@@ -15,7 +15,7 @@ This project is built using a decoupled, full-stack architecture:
 * **Frontend:** React / Next.js (Vanilla Custom CSS, Lucide Icons)
 * **Backend:** Python / FastAPI fully abstracted via **SQLAlchemy ORM**
 * **Database:** SQLite for zero-config demo (Production-ready for AWS RDS PostgreSQL via ORM swap)
-* **AI Engine:** 3-Stage High-Availability Fallback Architecture (Layer 1: Z.AI GLM-4-Plus | Layer 2: Ilmu GLM-5.1 | Layer 3: OpenRouter)
+* **AI Engine:** 3-Stage High-Availability Fallback Architecture (Layer 1: Z.AI GLM-5.1 | Layer 2: Ilmu GLM-5.1 | Layer 3: OpenRouter)
 * **Performance Pipeline:** High-Speed Regex Prefixing for 0.01s entity extraction, bypassing AI latency when possible.
 * **Dynamic ROI Tracking:** Real-time interception of LLM API `usage.total_tokens` to calculate precise USD unit economics (API Cost vs Supply Chain Penalty Mitigated).
 

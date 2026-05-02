@@ -34,7 +34,7 @@ interface CrisisAnalysis { status: string; affected_component: Component; baseli
 interface FinancialImpact { net_financial_impact: number; }
 interface ComputationBreakdown { formula: string; math: string; source_attribution?: string; }
 interface TradeOffOption { option_id: string; action: string; justification: string; financial_impact: FinancialImpact; computation_breakdown?: ComputationBreakdown; }
-interface GlmRecommendation { primary_choice: string; explainability: string; confidence_score?: number; }
+interface GlmRecommendation { primary_choice: string; explainability: string; confidence_score?: number; model_used?: string; }
 interface InsightData { 
   contextual_data_retrieved: ContextualData; 
   crisis_analysis: CrisisAnalysis; 
@@ -94,8 +94,8 @@ function BusinessImpactDashboard({ insight, analysisTimeMs }: { insight: Insight
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', fontFamily: 'var(--font-display)' }}>
             {insight.glm_recommendation.confidence_score ? (insight.glm_recommendation.confidence_score * 100).toFixed(1) : 98.5}%
           </div>
-          <div style={{ fontSize: '0.85rem', color: '#a78bfa', marginTop: '0.25rem' }}>
-            Bullwhip effect strategically avoided
+          <div style={{ fontSize: '0.85rem', color: '#a78bfa', marginTop: '0.25rem', fontWeight: 500 }}>
+            Model: {insight.glm_recommendation.model_used || "Zhipu GLM-5.1"}
           </div>
         </div>
 
@@ -447,11 +447,16 @@ export default function App() {
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 className="section-title">AI Trade-off Analysis</h3>
-                    {insight.glm_recommendation.confidence_score && (
-                      <div className="status-badge" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.4)' }}>
-                        Confidence: {(insight.glm_recommendation.confidence_score * 100).toFixed(1)}%
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div className="status-badge" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#c4b5fd', border: '1px solid rgba(139, 92, 246, 0.4)' }}>
+                        <Code size={14} /> {insight.glm_recommendation.model_used || "Zhipu GLM-5.1"}
                       </div>
-                    )}
+                      {insight.glm_recommendation.confidence_score && (
+                        <div className="status-badge" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.4)' }}>
+                          Confidence: {(insight.glm_recommendation.confidence_score * 100).toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="cards-grid">
                     {insight.trade_off_options.map((option: TradeOffOption) => (

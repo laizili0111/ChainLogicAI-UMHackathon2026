@@ -7,7 +7,7 @@ class Settings:
     # Z.AI Main Config (New Key)
     Z_AI_MAIN_API_KEY = os.getenv("Z_AI_MAIN_API_KEY")
     Z_AI_MAIN_BASE_URL = os.getenv("Z_AI_MAIN_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/chat/completions")
-    Z_AI_MAIN_MODEL = os.getenv("Z_AI_MAIN_MODEL", "glm-4-plus")
+    Z_AI_MAIN_MODEL = os.getenv("Z_AI_MAIN_MODEL", "glm-5.1")
 
     # Z.AI Secondary Config (Existing Ilmu GLM 5.1)
     Z_AI_API_KEY = os.getenv("Z_AI_API_KEY")

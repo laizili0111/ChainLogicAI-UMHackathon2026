@@ -51,6 +51,7 @@ class GlmRecommendation(BaseModel):
     primary_choice: str
     explainability: str
     confidence_score: float
+    model_used: Optional[str] = "Zhipu GLM-5.1"
 
 class AIAnalysisResponse(BaseModel):
     crisis_analysis: CrisisAnalysis
