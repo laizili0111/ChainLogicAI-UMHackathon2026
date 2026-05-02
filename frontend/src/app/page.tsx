@@ -34,7 +34,7 @@ interface CrisisAnalysis { status: string; affected_component: Component; baseli
 interface FinancialImpact { net_financial_impact: number; }
 interface ComputationBreakdown { formula: string; math: string; source_attribution?: string; }
 interface TradeOffOption { option_id: string; action: string; justification: string; financial_impact: FinancialImpact; computation_breakdown?: ComputationBreakdown; }
-interface GlmRecommendation { primary_choice: string; explainability: string; confidence_score?: number; }
+interface GlmRecommendation { primary_choice: string; explainability: string; confidence_score?: number; model_used?: string; }
 interface InsightData { 
   contextual_data_retrieved: ContextualData; 
   crisis_analysis: CrisisAnalysis; 
