@@ -24,6 +24,7 @@ import InboxView, { Email } from "./InboxView";
 interface ContextualData {
   sku: string;
   current_inventory: number;
+  required_quantity: number;
   unit_cost: number;
   daily_penalty: number;
   database_status: string;
