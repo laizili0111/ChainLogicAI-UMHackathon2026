@@ -11,7 +11,7 @@ def test_analyze_crisis_no_sku():
     assert response.status_code == 200
     data = response.json()
     assert "error" in data
-    assert "Z.AI could not identify a valid component SKU" in data["error"]
+    assert "could not identify a valid component SKU" in data["error"]
 
 def test_analyze_crisis_safe_state():
     # 'BRK-PAD-99' has 850 stock and requires 300. This triggers SAFE state logic.
