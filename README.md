@@ -17,6 +17,7 @@ This project is built using a decoupled, full-stack architecture:
 * **Database:** SQLite for zero-config demo (Production-ready for AWS RDS PostgreSQL via ORM swap)
 * **AI Engine:** 3-Stage High-Availability Fallback Architecture (Layer 1: Z.AI GLM-4-Plus | Layer 2: Ilmu GLM-5.1 | Layer 3: OpenRouter)
 * **Performance Pipeline:** High-Speed Regex Prefixing for 0.01s entity extraction, bypassing AI latency when possible.
+* **Dynamic ROI Tracking:** Real-time interception of LLM API `usage.total_tokens` to calculate precise USD unit economics (API Cost vs Supply Chain Penalty Mitigated).
 
 ### Project Structure
 ```text
@@ -54,10 +55,9 @@ To enable the live AI reasoning engine, you must configure the Z.AI API settings
 3. Add the following variables to the file:
 
 ```env
-Z_AI_API_KEY="your_api_key_here"
-Z_AI_BASE_URL="https://api.ilmu.ai/v1/chat/completions"
-Z_AI_MODEL="ilmu-glm-5.1"
-OPENROUTER_API_KEY="your_openrouter_key_here"
+Z_AI_MAIN_API_KEY=your_primary_key_here
+Z_AI_API_KEY=your_secondary_key_here
+OPENROUTER_API_KEY=your_openrouter_key_here
 ```
 *(Note: The `.env` file is safely ignored by Git thanks to the `.gitignore` file).*
 

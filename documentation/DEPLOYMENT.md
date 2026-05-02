@@ -10,8 +10,14 @@ This guarantees that the development and demo environments are perfectly reprodu
 * **Frontend Service**: `node:18-alpine` running Next.js.
 * **Orchestration**: `docker-compose` bridges the frontend and backend over an isolated network (`chainlogic_net`).
 
-## 2. Production Scalability Strategy (AWS Cloud)
-For a multi-tenant SME rollout, the architecture transitions seamlessly to the cloud:
+## 2. Serverless PaaS Deployment (Vercel & Render)
+For instant cloud accessibility without managing AWS infrastructure, the codebase is natively engineered to support decoupled PaaS hosting:
+* **Frontend:** Hosted on **Vercel**, utilizing dynamic environment variables (`NEXT_PUBLIC_API_URL`) to seamlessly connect to the cloud backend.
+* **Backend:** Hosted on **Render**, utilizing their native Python Docker abstraction. Render manages the Uvicorn workers and automatically restarts the ephemeral SQLite database for fresh prototype testing.
+* **CI/CD:** Both Vercel and Render automatically detect GitHub `main` branch pushes to trigger zero-downtime rolling updates.
+
+## 3. Enterprise Scalability Strategy (AWS Cloud)
+For a full multi-tenant SME rollout, the architecture transitions seamlessly to enterprise cloud infrastructure:
 
 1. **API Gateway & Load Balancing**: 
    - Traffic routes through an AWS Application Load Balancer (ALB).
