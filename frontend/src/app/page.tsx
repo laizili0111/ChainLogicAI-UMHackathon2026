@@ -418,10 +418,17 @@ export default function App() {
                   <p className="code-comment"># 3. Data retrieved successfully:</p>
                   <p>{`{`}</p>
                   <p>&nbsp;&nbsp;&quot;current_stock&quot;: <span className="code-number">{insight.contextual_data_retrieved.current_inventory}</span>,</p>
-                  <p>&nbsp;&nbsp;&quot;unit_cost&quot;: <span className="code-number">${insight.contextual_data_retrieved.unit_cost}</span>,</p>
+                  <p>&nbsp;&nbsp;&quot;required_quantity&quot;: <span className="code-number">{insight.contextual_data_retrieved.required_quantity}</span>,</p>
                   <p>&nbsp;&nbsp;&quot;downtime_penalty_rate&quot;: <span className="code-number">${insight.contextual_data_retrieved.daily_penalty}/day</span></p>
                   <p>{`}`}</p>
-                  <p className="code-success">STATUS: Data successfully fused with text prompt and sent to Agentic AI Engine.</p>
+                  {insight.crisis_analysis.status === "SAFE" ? (
+                    <p className="code-success" style={{ color: '#34d399', fontWeight: 'bold' }}>
+                      # 4. THRESHOLD CHECK: Stock &gt;= Required OR Penalty == $0. <br/>
+                      STATUS: Bypassing AI reasoning layer. Autonomous write-back verified. SAFE STATE CONFIRMED.
+                    </p>
+                  ) : (
+                    <p className="code-success"># 4. THRESHOLD CHECK: CRITICAL. Data successfully fused with text prompt and sent to Agentic AI Engine.</p>
+                  )}
                 </div>
               </details>
 
