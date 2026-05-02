@@ -237,7 +237,8 @@ export default function App() {
     setAnalysisTimeMs(null);
     const startTime = performance.now();
     try {
-      const response = await fetch("http://localhost:8000/api/analyze-crisis", {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE_URL}/api/analyze-crisis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trigger_text: text }),
@@ -255,7 +256,8 @@ export default function App() {
 
   const handleExecute = async (option_id: string, action_text: string) => {
     try {
-      const response = await fetch("http://localhost:8000/api/execute-decision", {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE_URL}/api/execute-decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ option_id: option_id, sku: insight?.contextual_data_retrieved.sku || "AE-V8-SENS", action: action_text }),
