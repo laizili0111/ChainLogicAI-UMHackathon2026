@@ -62,7 +62,7 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
             for model in settings.FALLBACK_MODELS:
                 try:
                     print(f"Trying fallback model: {model}")
-                    ai_json_string = call_openrouter_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, model)
+                    ai_json_string, total_tokens = call_openrouter_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, model, return_tokens=True)
                     if ai_json_string:
                         print(f"Fallback successful with {model}")
                         model_used_name = f"OpenRouter ({model})"

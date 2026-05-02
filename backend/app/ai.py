@@ -42,7 +42,7 @@ Your JSON output must perfectly match this exact schema:
 }
 """
 
-def call_openrouter_ai(system_prompt: str, user_prompt: str, model: str) -> str:
+def call_openrouter_ai(system_prompt: str, user_prompt: str, model: str, return_tokens: bool = False):
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -56,9 +56,11 @@ def call_openrouter_ai(system_prompt: str, user_prompt: str, model: str) -> str:
     
     data = {"model": model, "messages": messages}
     req = urllib.request.Request(settings.OPENROUTER_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
-    with urllib.request.urlopen(req, timeout=5.0) as response:
+    with urllib.request.urlopen(req, timeout=10.0) as response:
         result = json.loads(response.read().decode("utf-8"))
-        return result["choices"][0]["message"]["content"]
+        content = result["choices"][0]["message"]["content"]
+        tokens = result.get("usage", {}).get("total_tokens", 2000)
+        return (content, tokens) if return_tokens else content
 
 def call_z_ai_main(system_prompt: str, user_prompt: str, return_tokens: bool = False):
     headers = {
