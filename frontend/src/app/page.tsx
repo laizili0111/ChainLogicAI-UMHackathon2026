@@ -27,6 +27,7 @@ interface ContextualData {
   unit_cost: number;
   daily_penalty: number;
   database_status: string;
+  tokens_used?: number;
 }
 interface Component { sku: string; name: string; }
 interface CrisisAnalysis { status: string; affected_component: Component; baseline_impact: string; }
@@ -43,6 +44,12 @@ interface InsightData {
 // --- SUB-COMPONENT: BUSINESS IMPACT / ROI DASHBOARD ---
 function BusinessImpactDashboard({ insight, analysisTimeMs }: { insight: InsightData; analysisTimeMs: number | null }) {
   const dailyPenalty = insight.contextual_data_retrieved.daily_penalty || 0;
+  const tokensUsed = insight.contextual_data_retrieved.tokens_used || 1800;
+  
+  // Calculate Dynamic AI Cost in USD
+  // Z.AI GLM-4-Plus estimated cost: ~$0.01 per 1,000 tokens
+  const estimatedAiCostUsd = (tokensUsed / 1000) * 0.01;
+  const returnOnInvestment = estimatedAiCostUsd > 0 ? dailyPenalty / estimatedAiCostUsd : 0;
   
   return (
     <div className="roi-dashboard" style={{ marginTop: '2.5rem', animation: 'fadeInUp 0.8s ease-out' }}>
@@ -89,6 +96,19 @@ function BusinessImpactDashboard({ insight, analysisTimeMs }: { insight: Insight
           </div>
           <div style={{ fontSize: '0.85rem', color: '#a78bfa', marginTop: '0.25rem' }}>
             Bullwhip effect strategically avoided
+          </div>
+        </div>
+
+        {/* Metric 4: API Cost vs Capital Saved ROI */}
+        <div className="roi-card glass-panel" style={{ padding: '1.25rem', borderLeft: '3px solid #ec4899' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', marginBottom: '0.5rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <DollarSign size={16} /> Cost vs Value ROI
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', fontFamily: 'var(--font-display)' }}>
+            {returnOnInvestment.toLocaleString(undefined, { maximumFractionDigits: 0 })}<span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 500 }}>x ROI</span>
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#f472b6', marginTop: '0.25rem' }}>
+            ${estimatedAiCostUsd.toFixed(3)} API Cost ({tokensUsed} tokens) vs ${dailyPenalty.toLocaleString()} Saved
           </div>
         </div>
 

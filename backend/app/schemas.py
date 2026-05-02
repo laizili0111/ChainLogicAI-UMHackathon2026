@@ -20,6 +20,7 @@ class ContextualData(BaseModel):
     daily_penalty: float
     required_quantity: int
     database_status: str
+    tokens_used: Optional[int] = 2000
 
 # AI Response Schemas
 class AffectedComponent(BaseModel):

@@ -46,14 +46,15 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
     user_prompt = f"UNSTRUCTURED TRIGGER: {incoming_email}\n\nSTRUCTURED ERP CONTEXT:\n{erp_context_string}"
     
     try:
-        ai_json_string = call_z_ai_main(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
+        ai_json_string, total_tokens = call_z_ai_main(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
     except Exception as e:
         print(f"Primary Z.AI (Main) failed: {e}. Attempting secondary Z.AI (Ilmu)...")
         try:
-            ai_json_string = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt)
+            ai_json_string, total_tokens = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
         except Exception as e2:
             print(f"Secondary Z.AI failed: {e2}. Attempting OpenRouter fallback...")
             ai_json_string = None
+            total_tokens = 2000
             
             for model in settings.FALLBACK_MODELS:
                 try:
@@ -117,7 +118,7 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
         ai_json_string = ai_json_string.strip()
         
         decision_data = json.loads(ai_json_string)
-        
+        live_ui_data["tokens_used"] = total_tokens
         decision_data["contextual_data_retrieved"] = live_ui_data
         
         current_stock = live_ui_data["current_inventory"]
