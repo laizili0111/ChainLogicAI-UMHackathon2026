@@ -240,3 +240,5 @@ Upon reaching the **Month 9 operational breakeven milestone**, infrastructure up
 | **Vector Memory** | `pgvector` (PostgreSQL extension) | Enables RAG over historical supply chain crises. AI recommendations gain regional context: *"A similar port strike occurred in 2024; here is how it was resolved."* |
 | **Infrastructure as Code** | Terraform | Declarative cloud provisioning. Entire AWS infrastructure can be destroyed and recreated in under 10 minutes. Eliminates manual click-ops drift. |
 | **Observability** | Datadog / AWS CloudWatch | Real-time API latency, fallback trigger rates, and token spend dashboards for operations and finance teams. |
+
+test
