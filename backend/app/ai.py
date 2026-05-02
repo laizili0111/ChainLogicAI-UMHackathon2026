@@ -60,9 +60,9 @@ def call_openrouter_ai(system_prompt: str, user_prompt: str, model: str) -> str:
         result = json.loads(response.read().decode("utf-8"))
         return result["choices"][0]["message"]["content"]
 
-def call_z_ai_main(system_prompt: str, user_prompt: str, return_tokens: bool = False):
+def call_ilmu_ai(system_prompt: str, user_prompt: str, return_tokens: bool = False):
     headers = {
-        "Authorization": f"Bearer {settings.Z_AI_MAIN_API_KEY}",
+        "Authorization": f"Bearer {settings.ILMU_API_KEY}",
         "Content-Type": "application/json"
     }
     messages = []
@@ -71,11 +71,11 @@ def call_z_ai_main(system_prompt: str, user_prompt: str, return_tokens: bool = F
     messages.append({"role": "user", "content": user_prompt})
     
     data = {
-        "model": settings.Z_AI_MAIN_MODEL,
+        "model": settings.ILMU_MODEL,
         "messages": messages
     }
     
-    req = urllib.request.Request(settings.Z_AI_MAIN_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
+    req = urllib.request.Request(settings.ILMU_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
     try:
         with urllib.request.urlopen(req, timeout=45.0) as response:
             result = json.loads(response.read().decode("utf-8"))
@@ -85,13 +85,14 @@ def call_z_ai_main(system_prompt: str, user_prompt: str, return_tokens: bool = F
     except urllib.error.HTTPError as e:
         err_body = e.read().decode('utf-8', errors='ignore')
         safe_err = err_body.encode('ascii', 'ignore').decode('ascii')
-        print(f"Main Z.AI API Error ({e.code}): {safe_err}")
-        raise Exception(f"Main Z.AI API Error: {safe_err}")
+        print(f"Ilmu GLM API Error ({e.code}): {safe_err}")
+        raise Exception(f"Ilmu GLM API Error: {safe_err}")
 
-def call_z_ai(system_prompt: str, user_prompt: str, return_tokens: bool = False):
+def call_groq_ai(system_prompt: str, user_prompt: str, return_tokens: bool = False):
     headers = {
-        "Authorization": f"Bearer {settings.Z_AI_API_KEY}",
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json",
+        "User-Agent": "ChainLogic-Backend/1.0"
     }
     messages = []
     if system_prompt:
@@ -99,11 +100,11 @@ def call_z_ai(system_prompt: str, user_prompt: str, return_tokens: bool = False)
     messages.append({"role": "user", "content": user_prompt})
     
     data = {
-        "model": settings.Z_AI_MODEL,
+        "model": settings.GROQ_MODEL,
         "messages": messages
     }
     
-    req = urllib.request.Request(settings.Z_AI_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
+    req = urllib.request.Request(settings.GROQ_BASE_URL, headers=headers, data=json.dumps(data).encode("utf-8"))
     try:
         with urllib.request.urlopen(req, timeout=5.0) as response:
             result = json.loads(response.read().decode("utf-8"))
@@ -113,8 +114,8 @@ def call_z_ai(system_prompt: str, user_prompt: str, return_tokens: bool = False)
     except urllib.error.HTTPError as e:
         err_body = e.read().decode('utf-8', errors='ignore')
         safe_err = err_body.encode('ascii', 'ignore').decode('ascii')
-        print(f"Z.AI API Error ({e.code}): {safe_err}")
-        raise Exception(f"Z.AI API Error: {safe_err}")
+        print(f"Groq API Error ({e.code}): {safe_err}")
+        raise Exception(f"Groq API Error: {safe_err}")
 
 def extract_sku_from_trigger(email_text: str) -> str:
     # 1. High-Speed Regex Pass (Zero Latency)
@@ -123,24 +124,24 @@ def extract_sku_from_trigger(email_text: str) -> str:
         return match.group(0)
         
     # 2. AI Fallback (If text doesn't explicitly have the exact SKU pattern)
-    print("Regex failed to find SKU pattern. Falling back to Z.AI for contextual extraction...")
+    print("Regex failed to find SKU pattern. Falling back to Ilmu GLM for contextual extraction...")
     prompt = f"Extract the specific part number/SKU from this text. Output ONLY the SKU string, no other words. Text: {email_text}"
     
     try:
-        ai_response = call_z_ai_main("", prompt)
+        ai_response = call_ilmu_ai("", prompt)
         sku = ai_response.strip()
         match = re.search(r'[A-Z0-9]{2,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}', sku.upper())
         if match:
             return match.group(0)
     except Exception as e:
-        print(f"Main Extraction AI failed, trying secondary: {e}")
+        print(f"Primary Extraction AI (Ilmu) failed, trying secondary (Groq): {e}")
         try:
-            ai_response = call_z_ai("", prompt)
+            ai_response = call_groq_ai("", prompt)
             sku = ai_response.strip()
             match = re.search(r'[A-Z0-9]{2,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}', sku.upper())
             if match:
                 return match.group(0)
         except Exception as e2:
-            print(f"Secondary Extraction AI failed: {e2}")
+            print(f"Secondary Extraction AI (Groq) failed: {e2}")
             
     return None

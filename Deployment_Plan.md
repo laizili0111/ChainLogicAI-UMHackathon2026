@@ -35,7 +35,7 @@ Our prototype uses a **fully decoupled microservice architecture**, ensuring eac
 | **Runtime** | Dockerized container (`python:3.11-slim` base image) |
 | **Port** | Exposed on `8000`, mapped via Docker Compose |
 | **Restart Policy** | `unless-stopped` — auto-recovers from crashes |
-| **AI Resilience** | 3-Stage Fallback: Z.AI GLM-4-Plus → Ilmu GLM-5.1 → OpenRouter |
+| **AI Resilience** | 3-Stage Fallback: Ilmu GLM-5.1 → Groq (GPT-OSS-120B) → OpenRouter |
 
 ### 2.3 Database & ORM Abstraction Layer
 
@@ -162,7 +162,7 @@ The `backend/tests/test_api.py` suite contains **4 automated test cases**, each 
 
 | Test Name | What It Tests | Expected Behaviour |
 | :--- | :--- | :--- |
-| `test_analyze_crisis_no_sku` | **Graceful Failure:** Email contains no valid SKU | Returns `error` with message: *"Z.AI could not identify a valid component SKU"* |
+| `test_analyze_crisis_no_sku` | **Graceful Failure:** Email contains no valid SKU | Returns `error` with message: *"ChainLogic AI could not identify a valid component SKU"* |
 | `test_analyze_crisis_safe_state` | **Safe-State Short-Circuit:** `BRK-PAD-99` (stock: 850, required: 300) | Returns `status: SAFE`, `confidence_score: 1.0`, bypasses LLM entirely |
 | `test_analyze_crisis_critical_state` | **Full AI Pipeline:** `AE-V8-SENS` (stock: 12, required: 40) | Returns `status: CRITICAL`, valid `trade_off_options[]`, `source_attribution` in computation breakdown |
 | `test_execute_decision_invalid_sku` | **Input Validation:** Empty SKU on decision execution endpoint | Returns `HTTP 400 Bad Request` |
@@ -178,7 +178,7 @@ Security is non-negotiable when handling enterprise supply chain financial data.
 | Security Layer | Implementation | Details |
 | :--- | :--- | :--- |
 | **Repository Hygiene** | `.gitignore` | Explicitly excludes `.env`, `*.db` files, and `venv/` from all commits |
-| **Secret Isolation** | `.env` (local only) | API keys (`Z_AI_MAIN_API_KEY`, `Z_AI_API_KEY`, `OPENROUTER_API_KEY`) are never hardcoded |
+| **Secret Isolation** | `.env` (local only) | API keys (`ILMU_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`) are never hardcoded |
 | **Production Secrets** | Render Environment Variables + Vercel Secrets | Keys are injected at runtime via platform secret managers — never stored in the repository |
 | **Network Isolation** | Docker bridge network (`chainlogic_net`) | Backend is not publicly exposed; only the frontend container communicates with it internally |
 | **Data Masking** | Backend-only computation | Sensitive ERP vendor pricing data is processed and hard-computed in Python. Only the extracted SKU string is transmitted to external LLM providers — not raw financial records |
@@ -199,7 +199,7 @@ Standard SKU pattern matching (e.g., `[A-Z]{2,4}-[A-Z0-9]{2,6}-[0-9]{2,4}`) is e
 ### 7.3 Dynamic ROI Token Tracking
 ChainLogic AI intercepts the LLM API's `usage.total_tokens` field from every response in real time. This is used to calculate and display the live **"Cost of AI vs. Penalty Mitigated"** ratio directly on the dashboard — giving supply chain managers a live ROI justification for each action taken.
 
-> **Formula:** `API Cost (RM) = usage.total_tokens × Z.AI token price` vs. `Penalty Mitigated (RM) = daily_penalty_rate × estimated_downtime_days`
+> **Formula:** `API Cost (RM) = usage.total_tokens × Ilmu API token price` vs. `Penalty Mitigated (RM) = daily_penalty_rate × estimated_downtime_days`
 
 ---
 
@@ -210,7 +210,7 @@ Transparency in engineering decisions demonstrates production maturity. The foll
 | Decision | Choice Made | Trade-off Accepted | Mitigation |
 | :--- | :--- | :--- | :--- |
 | **Database Engine** | SQLite (Prototype) | No multi-user concurrent write support | Full SQLAlchemy ORM abstraction — zero-code migration to PostgreSQL |
-| **AI Provider** | Z.AI GLM (Primary) | External API dependency; potential latency spikes | 3-Stage Fallback (Ilmu → OpenRouter) guarantees uptime even during full primary outage |
+| **AI Provider** | Ilmu GLM (Primary) | External API dependency; potential latency spikes | 3-Stage Fallback (Groq → OpenRouter) guarantees uptime even during full primary outage |
 | **Frontend Hosting** | Vercel | Vendor lock-in for edge deployment | Decoupled architecture; Next.js is portable to any Node.js host |
 | **3-Stage Fallback** | Regex → Mock → Structured Error | Fallback responses are less nuanced than GLM output | Fallback is clearly attributed in `source_attribution` field so users know when they are seeing a degraded response |
 | **Token Short-Circuit** | Pre-check before LLM call | Adds ~5ms database read latency per request | This is always net-positive: saves 500–2,000 tokens per short-circuited call |
@@ -229,7 +229,7 @@ Upon reaching the **Month 9 operational breakeven milestone**, infrastructure up
 | **Database Migration** | AWS RDS PostgreSQL | Full multi-user concurrency, automated backups, and read replicas. SQLAlchemy ORM makes this a single environment variable change. |
 | **Container Orchestration** | AWS Fargate + ECR | Docker images are pushed to Elastic Container Registry (ECR) and deployed on AWS Fargate (serverless containers). Auto-scales horizontally during supply chain disruption spikes with zero server management overhead. |
 | **Traffic Management** | AWS Application Load Balancer (ALB) | Routes traffic across Fargate instances. Rate limiting applied at the API Gateway level to prevent DDoS and runaway token spend. |
-| **Secrets Management** | AWS Secrets Manager | Replaces `.env` files entirely. Z.AI, Ilmu, and OpenRouter API keys are injected securely into containers at runtime — never stored in the repository or image. |
+| **Secrets Management** | AWS Secrets Manager | Replaces `.env` files entirely. Ilmu, Groq, and OpenRouter API keys are injected securely into containers at runtime — never stored in the repository or image. |
 
 ### Phase 2B — Full Kubernetes Orchestration (Month 18+)
 *Goal: Achieve true multi-tenant enterprise scaling for regional SME rollout.*

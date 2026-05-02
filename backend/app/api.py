@@ -4,7 +4,7 @@ from typing import Dict, Any
 from pydantic import ValidationError
 from .schemas import AnalyzeCrisisRequest, AIAnalysisResponse, ExecuteDecisionRequest, ExecuteDecisionResponse
 from .db import fetch_erp_context, fetch_erp_data_dict, execute_ai_decision
-from .ai import extract_sku_from_trigger, call_z_ai_main, call_z_ai, call_openrouter_ai, CHAINLOGIC_SYSTEM_PROMPT
+from .ai import extract_sku_from_trigger, call_ilmu_ai, call_groq_ai, call_openrouter_ai, CHAINLOGIC_SYSTEM_PROMPT
 from .config import settings
 
 router = APIRouter()
@@ -15,7 +15,7 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
     target_sku = extract_sku_from_trigger(incoming_email)
     
     if not target_sku:
-        return {"error": "Z.AI could not identify a valid component SKU in the provided text. Please ensure the part number is included."}
+        return {"error": "ChainLogic AI could not identify a valid component SKU in the provided text. Please ensure the part number is included."}
     
     erp_context_string = fetch_erp_context(target_sku)
     live_ui_data = fetch_erp_data_dict(target_sku)
@@ -46,15 +46,15 @@ async def analyze_crisis(request: AnalyzeCrisisRequest):
     user_prompt = f"UNSTRUCTURED TRIGGER: {incoming_email}\n\nSTRUCTURED ERP CONTEXT:\n{erp_context_string}"
     
     try:
-        ai_json_string, total_tokens = call_z_ai_main(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
-        model_used_name = "Zhipu GLM-5.1"
+        ai_json_string, total_tokens = call_ilmu_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
+        model_used_name = "Ilmu GLM-5.1"
     except Exception as e:
-        print(f"Primary Z.AI (Main) failed: {e}. Attempting secondary Z.AI (Ilmu)...")
+        print(f"Primary AI (Ilmu) failed: {e}. Attempting secondary (Groq)...")
         try:
-            ai_json_string, total_tokens = call_z_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
-            model_used_name = "Ilmu GLM-5.1"
+            ai_json_string, total_tokens = call_groq_ai(CHAINLOGIC_SYSTEM_PROMPT, user_prompt, return_tokens=True)
+            model_used_name = "OpenAI GPT-OSS-120B (Groq)"
         except Exception as e2:
-            print(f"Secondary Z.AI failed: {e2}. Attempting OpenRouter fallback...")
+            print(f"Secondary AI (Groq) failed: {e2}. Attempting OpenRouter fallback...")
             ai_json_string = None
             total_tokens = 2000
             model_used_name = "Unknown"

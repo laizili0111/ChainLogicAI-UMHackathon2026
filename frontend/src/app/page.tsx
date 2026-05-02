@@ -47,7 +47,7 @@ function BusinessImpactDashboard({ insight, analysisTimeMs }: { insight: Insight
   const tokensUsed = insight.contextual_data_retrieved.tokens_used || 1800;
   
   // Calculate Dynamic AI Cost in USD
-  // Z.AI GLM-4-Plus estimated cost: ~$0.01 per 1,000 tokens
+  // Ilmu GLM estimated cost: ~$0.01 per 1,000 tokens
   const estimatedAiCostUsd = (tokensUsed / 1000) * 0.01;
   const returnOnInvestment = estimatedAiCostUsd > 0 ? dailyPenalty / estimatedAiCostUsd : 0;
   
@@ -133,7 +133,7 @@ function TradeOffCard({
 }) {
   const [showDetails, setShowDetails] = useState(false);
 
-  // Use dynamic math breakdown from Z.AI if available
+  // Use dynamic math breakdown from AI if available
   const calculateMath = () => {
     if (option.computation_breakdown) {
       return {
@@ -177,7 +177,7 @@ function TradeOffCard({
         </div>
 
         <div className="card-reasoning">
-          <span className="reasoning-label">Z.AI Reasoning: </span>
+          <span className="reasoning-label">ChainLogic AI Reasoning: </span>
           {option.justification}
         </div>
 
@@ -379,7 +379,7 @@ export default function App() {
 
             <footer className="panel-footer">
               <div className="footer-note" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Activity size={14} /> {loading ? "AI is currently evaluating this disruption scenario." : (insight ? "Z.AI GLM analysis complete. Options formulated." : "Ready to analyze disruption scenario.")}
+                <Activity size={14} /> {loading ? "AI is currently evaluating this disruption scenario." : (insight ? "Agentic AI analysis complete. Options formulated." : "Ready to analyze disruption scenario.")}
               </div>
               <button
                 onClick={() => performAnalysis(`Subject: ${activeEmail?.subject || ''}\n\n${emailText}`)}
@@ -399,7 +399,7 @@ export default function App() {
                 <div className="loader-ring"></div>
                 <Database size={40} />
               </div>
-              <h3 className="loading-title">Z.AI GLM is Processing</h3>
+              <h3 className="loading-title">ChainLogic AI is Processing</h3>
               <div className="loading-text">Querying SQLite & Formulating Trade-offs...</div>
             </div>
           )}
@@ -421,7 +421,7 @@ export default function App() {
                   <p>&nbsp;&nbsp;&quot;unit_cost&quot;: <span className="code-number">${insight.contextual_data_retrieved.unit_cost}</span>,</p>
                   <p>&nbsp;&nbsp;&quot;downtime_penalty_rate&quot;: <span className="code-number">${insight.contextual_data_retrieved.daily_penalty}/day</span></p>
                   <p>{`}`}</p>
-                  <p className="code-success">STATUS: Data successfully fused with text prompt and sent to Z.AI GLM.</p>
+                  <p className="code-success">STATUS: Data successfully fused with text prompt and sent to Agentic AI Engine.</p>
                 </div>
               </details>
 
@@ -476,7 +476,7 @@ export default function App() {
                 <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <h3 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>Z.AI System Recommendation</h3>
+                      <h3 style={{ margin: '0 0 0.5rem 0', color: '#60a5fa' }}>ChainLogic AI System Recommendation</h3>
                       <p style={{ margin: 0, opacity: 0.9 }}>{insight.glm_recommendation.explainability}</p>
                     </div>
                     {insight.glm_recommendation.confidence_score && (

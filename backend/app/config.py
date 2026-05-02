@@ -4,15 +4,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings:
-    # Z.AI Main Config (New Key)
-    Z_AI_MAIN_API_KEY = os.getenv("Z_AI_MAIN_API_KEY")
-    Z_AI_MAIN_BASE_URL = os.getenv("Z_AI_MAIN_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/chat/completions")
-    Z_AI_MAIN_MODEL = os.getenv("Z_AI_MAIN_MODEL", "glm-5.1")
+    # Ilmu GLM Config (Primary)
+    ILMU_API_KEY = os.getenv("ILMU_API_KEY")
+    ILMU_BASE_URL = os.getenv("ILMU_BASE_URL", "https://api.ilmu.ai/v1/chat/completions")
+    ILMU_MODEL = os.getenv("ILMU_MODEL", "ilmu-glm-5.1")
 
-    # Z.AI Secondary Config (Existing Ilmu GLM 5.1)
-    Z_AI_API_KEY = os.getenv("Z_AI_API_KEY")
-    Z_AI_BASE_URL = os.getenv("Z_AI_BASE_URL", "https://api.ilmu.ai/v1/chat/completions")
-    Z_AI_MODEL = os.getenv("Z_AI_MODEL", "ilmu-glm-5.1")
+    # Groq Config (Secondary)
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1/chat/completions")
+    GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     # OpenRouter Fallback Config
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
